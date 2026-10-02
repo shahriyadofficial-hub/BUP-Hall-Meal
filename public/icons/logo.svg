@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Deep Sleek Slate Surface -->
+    <linearGradient id="bgSurface" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+
+    <!-- Refined Emerald Accent (BUP Core Identity) -->
+    <linearGradient id="emeraldStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+
+    <!-- Subtle Golden Touch -->
+    <linearGradient id="goldAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="512" height="512" rx="120" fill="url(#bgSurface)" />
+  <rect width="504" height="504" x="4" y="4" rx="116" fill="none" stroke="#1E293B" stroke-width="2" />
+
+  <!-- Minimal Plate Ring -->
+  <circle cx="256" cy="216" r="120" fill="#090E17" stroke="url(#emeraldStroke)" stroke-width="5" />
+  <circle cx="256" cy="216" r="94" fill="none" stroke="#1E293B" stroke-width="2" stroke-dasharray="4 6" />
+
+  <!-- 3 Minimal Dots representing 3 Daily Meals (Breakfast, Lunch, Dinner) -->
+  <circle cx="256" cy="180" r="10" fill="url(#goldAccent)" />
+  <circle cx="220" cy="236" r="10" fill="url(#goldAccent)" />
+  <circle cx="292" cy="236" r="10" fill="url(#goldAccent)" />
+
+  <!-- Minimal Sleek Cutlery (Left: Fork Silhouette) -->
+  <path d="M 106 170 L 106 205 C 106 215 112 223 118 225 L 118 270 C 118 273 120 275 123 275 C 126 275 128 273 128 270 L 128 225 C 134 223 140 215 140 205 L 140 170 M 117 170 L 117 200 M 129 170 L 129 200" fill="none" stroke="#64748B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Minimal Sleek Cutlery (Right: Spoon Silhouette) -->
+  <path d="M 372 195 C 372 216 381 226 386 228 L 386 270 C 386 273 388 275 391 275 C 394 275 396 273 396 270 L 396 228 C 401 226 410 216 410 195 C 410 175 401 165 391 165 C 381 165 372 175 372 195 Z" fill="none" stroke="#64748B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Clean Minimalist Typography -->
+  <text x="256" y="396" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="30" font-weight="700" fill="#F8FAFC">
+    BUP HALL MEAL
+  </text>
+  
+  <text x="256" y="424" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#10B981">
+    DINING SYSTEM
+  </text>
+</svg>
