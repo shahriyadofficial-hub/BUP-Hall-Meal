@@ -7,8 +7,12 @@ claude-tools/
 out/
 
 # Environment secrets - NEVER commit
+.env
 .env.local
+.env*.local
 .env.*.local
+*.pem
+serviceAccountKey.json
 
 # TypeScript build info
 *.tsbuildinfo
