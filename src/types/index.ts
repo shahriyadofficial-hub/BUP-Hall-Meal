@@ -64,6 +64,7 @@ export interface User {
   totp_secret: string;                // Base32 / Hex secret for RFC 6238 TOTP
   dining_pin_hash: string;            // bcrypt / pgcrypto hash of 4-digit PIN
   is_approved: boolean;               // Verified by Hall Provost / Administration (auto for edu mail)
+  is_onboarded?: boolean;             // True once student completes initial hall profile setup
   hall_serial?: string;               // Short unique serial (e.g., "042" or "42")
   auth_provider?: string;             // 'google' | 'email' | 'phone'
   avatar_url?: string | null;         // Google avatar or uploaded profile photo

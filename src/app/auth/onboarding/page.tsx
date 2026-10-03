@@ -69,14 +69,8 @@ export default function StudentOnboardingPage() {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [validatedPin, setValidatedPin] = useState<string | null>(null);
 
-  // Phone Verification States
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-  const [showPhoneOtpBox, setShowPhoneOtpBox] = useState(false);
-  const [phoneOtp, setPhoneOtp] = useState("");
-  const [phoneOtpError, setPhoneOtpError] = useState<string | null>(null);
-  const [isSendingPhoneOtp, setIsSendingPhoneOtp] = useState(false);
-  const [isVerifyingPhoneOtp, setIsVerifyingPhoneOtp] = useState(false);
-  const [phoneDemoOtp, setPhoneDemoOtp] = useState<string | null>(null);
+  // Phone state (OTP verification removed in favor of direct OAuth flow)
+  const [isPhoneVerified, setIsPhoneVerified] = useState(true);
 
   // Status & Validation
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -173,105 +167,7 @@ export default function StudentOnboardingPage() {
     loadUserSession();
   }, [router]);
 
-  /**
-   * Send Phone Verification SMS OTP
-   */
-  const handleSendPhoneOtp = async () => {
-    setPhoneOtpError(null);
-    setPhoneDemoOtp(null);
 
-    const cleanPhone = phoneNumber.trim();
-    if (!cleanPhone) {
-      setPhoneOtpError(
-        isBengali
-          ? "অনুগ্রহ করে আপনার মোবাইল নম্বর লিখুন"
-          : "Please enter your mobile phone number"
-      );
-      return;
-    }
-
-    if (!isValidBangladeshiPhone(cleanPhone)) {
-      setPhoneOtpError(t.auth.invalidPhoneError);
-      return;
-    }
-
-    setIsSendingPhoneOtp(true);
-
-    try {
-      const normalized = normalizePhoneNumber(cleanPhone);
-      const res = await fetch("/api/auth/verify-phone", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "send", phoneNumber: normalized }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to send phone OTP");
-      }
-
-      setShowPhoneOtpBox(true);
-      if (data.demoOtp) {
-        setPhoneDemoOtp(data.demoOtp);
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to send verification code";
-      setPhoneOtpError(msg);
-    } finally {
-      setIsSendingPhoneOtp(false);
-    }
-  };
-
-  /**
-   * Verify Submitted Phone OTP
-   */
-  const handleVerifyPhoneOtp = async () => {
-    setPhoneOtpError(null);
-    const cleanOtp = phoneOtp.trim();
-
-    if (!cleanOtp || cleanOtp.length !== 6) {
-      setPhoneOtpError(
-        isBengali ? "সঠিক ৬ ডিজিটের ওটিপি কোড দিন" : "Enter a valid 6-digit OTP code"
-      );
-      return;
-    }
-
-    setIsVerifyingPhoneOtp(true);
-
-    try {
-      const normalized = normalizePhoneNumber(phoneNumber);
-      const res = await fetch("/api/auth/verify-phone", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "verify",
-          phoneNumber: normalized,
-          otp: cleanOtp,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Invalid OTP code");
-      }
-
-      setIsPhoneVerified(true);
-      setShowPhoneOtpBox(false);
-      setPhoneOtp("");
-      if (formErrors.phoneNumber) {
-        setFormErrors((prev) => {
-          const copy = { ...prev };
-          delete copy.phoneNumber;
-          return copy;
-        });
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Verification failed";
-      setPhoneOtpError(msg);
-    } finally {
-      setIsVerifyingPhoneOtp(false);
-    }
-  };
 
   /**
    * Validates form fields prior to submission
@@ -336,8 +232,6 @@ export default function StudentOnboardingPage() {
         : "Phone number is required";
     } else if (!isValidBangladeshiPhone(phoneNumber)) {
       errors.phoneNumber = t.auth.invalidPhoneError;
-    } else if (!isPhoneVerified) {
-      errors.phoneNumber = t.auth.phoneVerificationRequired;
     }
 
     if (!photoUrl) {
@@ -789,132 +683,36 @@ export default function StudentOnboardingPage() {
                 </div>
               </div>
 
-              {/* Phone Number with In-line SMS Verification */}
-              <div className="space-y-2 p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-300 font-bengali flex items-center space-x-1.5">
-                    <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>{t.auth.phoneNumber}</span>
-                    <span className="text-emerald-400">*</span>
-                  </label>
-                  {isPhoneVerified ? (
-                    <span className="inline-flex items-center space-x-1 text-[11px] text-emerald-400 font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">
-                      <ShieldCheck className="w-3 h-3" />
-                      <span className="font-bengali">{t.auth.phoneVerified}</span>
-                    </span>
-                  ) : (
-                    <span className="text-[11px] text-amber-400 font-bengali">
-                      {t.auth.phoneNotVerified}
-                    </span>
-                  )}
+              {/* Phone Number Field */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 font-bengali flex items-center space-x-1.5">
+                  <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{t.auth.phoneNumber}</span>
+                  <span className="text-emerald-400">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    required
+                    value={phoneNumber}
+                    onChange={(e) => {
+                      setPhoneNumber(e.target.value);
+                      if (formErrors.phoneNumber) {
+                        setFormErrors((prev) => {
+                          const copy = { ...prev };
+                          delete copy.phoneNumber;
+                          return copy;
+                        });
+                      }
+                    }}
+                    placeholder={t.auth.phoneNumberPlaceholder}
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-slate-100 text-sm font-mono placeholder:text-slate-600 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      formErrors.phoneNumber
+                        ? "border-rose-500/80 focus:ring-rose-500"
+                        : "border-slate-800 hover:border-slate-700"
+                    }`}
+                  />
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      type="tel"
-                      required
-                      value={phoneNumber}
-                      disabled={isPhoneVerified}
-                      onChange={(e) => {
-                        setPhoneNumber(e.target.value);
-                        setIsPhoneVerified(false);
-                        setShowPhoneOtpBox(false);
-                      }}
-                      placeholder={t.auth.phoneNumberPlaceholder}
-                      className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-slate-100 text-sm font-mono placeholder:text-slate-600 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                        isPhoneVerified
-                          ? "border-emerald-500/50 bg-emerald-950/10 text-emerald-300"
-                          : formErrors.phoneNumber
-                          ? "border-rose-500/80 focus:ring-rose-500"
-                          : "border-slate-800 hover:border-slate-700"
-                      }`}
-                    />
-                  </div>
-
-                  {!isPhoneVerified ? (
-                    <button
-                      type="button"
-                      disabled={isSendingPhoneOtp}
-                      onClick={handleSendPhoneOtp}
-                      className="px-3 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs font-bengali whitespace-nowrap transition-colors flex items-center space-x-1 disabled:opacity-50"
-                    >
-                      {isSendingPhoneOtp ? (
-                        <span>{t.auth.sendingPhoneOtp}</span>
-                      ) : (
-                        <span>{showPhoneOtpBox ? t.auth.resendOtp : t.auth.verifyPhone}</span>
-                      )}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsPhoneVerified(false);
-                        setShowPhoneOtpBox(false);
-                      }}
-                      className="px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bengali transition-colors"
-                    >
-                      {isBengali ? "পরিবর্তন" : "Change"}
-                    </button>
-                  )}
-                </div>
-
-                {/* Inline Phone OTP Verification Box */}
-                <AnimatePresence>
-                  {showPhoneOtpBox && !isPhoneVerified && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="pt-2 space-y-2 border-t border-slate-800"
-                    >
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-300 font-bengali">{t.auth.enterPhoneOtp}</span>
-                        {phoneDemoOtp && (
-                          <span className="text-[11px] font-mono text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/30">
-                            Demo Code: <strong>{phoneDemoOtp}</strong>
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          maxLength={6}
-                          value={phoneOtp}
-                          onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                          placeholder="123456"
-                          className="flex-1 px-3.5 py-2 text-center font-mono text-base tracking-widest font-bold rounded-xl bg-slate-950 border border-slate-700 text-emerald-400 focus:outline-none focus:border-emerald-500"
-                        />
-                        <button
-                          type="button"
-                          disabled={isVerifyingPhoneOtp || phoneOtp.length !== 6}
-                          onClick={handleVerifyPhoneOtp}
-                          className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs font-bengali transition-colors disabled:opacity-50"
-                        >
-                          {isVerifyingPhoneOtp ? "..." : t.auth.confirmPhoneOtp}
-                        </button>
-                      </div>
-
-                      {phoneDemoOtp && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPhoneOtp(phoneDemoOtp);
-                          }}
-                          className="text-[10px] text-emerald-400 hover:underline font-mono"
-                        >
-                          Click here to auto-fill code: {phoneDemoOtp}
-                        </button>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {phoneOtpError && (
-                  <p className="text-[11px] text-rose-400 font-bengali">{phoneOtpError}</p>
-                )}
                 {formErrors.phoneNumber && (
                   <p className="text-[11px] text-rose-400 font-bengali">{formErrors.phoneNumber}</p>
                 )}

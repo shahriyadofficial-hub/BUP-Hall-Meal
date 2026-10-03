@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { hashDiningPin, isValidDiningPin, isValidEmail, normalizePhoneNumber, isPhoneRecentlyVerified } from "@/lib/auth-pin";
+import { hashDiningPin, isValidDiningPin, isValidEmail, normalizePhoneNumber } from "@/lib/auth-pin";
 import { isBUPEduEmail, extractStudentIdFromEmail } from "@/lib/auth-utils";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { HallType } from "@/types";
@@ -148,8 +148,7 @@ export async function POST(request: NextRequest) {
 
     // 4. Phone verification state & normalization
     const normalizedPhone = normalizePhoneNumber(phoneNumber);
-    const serverVerifiedPhone = isPhoneRecentlyVerified(normalizedPhone);
-    const finalPhoneVerified = Boolean(isPhoneVerified || serverVerifiedPhone);
+    const finalPhoneVerified = Boolean(isPhoneVerified ?? true);
 
     // 5. Generate RFC 6238 TOTP seed secret (20 random bytes hex encoded)
     const totpSecret = crypto.randomBytes(20).toString("hex");

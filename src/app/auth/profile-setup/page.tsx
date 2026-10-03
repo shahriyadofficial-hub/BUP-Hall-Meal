@@ -95,9 +95,28 @@ export default function ProfileSetupPage() {
             .eq("id", u.id)
             .maybeSingle();
 
-          if (existing && existing.student_id && existing.room_number) {
+          if (
+            existing &&
+            existing.student_id &&
+            !existing.student_id.startsWith("PENDING") &&
+            existing.room_number &&
+            existing.room_number !== "PENDING"
+          ) {
             router.push("/student/dashboard");
             return;
+          }
+
+          if (existing) {
+            if (existing.student_id && !existing.student_id.startsWith("PENDING")) {
+              setStudentId(existing.student_id);
+              setHallSerial(existing.student_id.slice(-3));
+            }
+            if (existing.full_name && existing.full_name !== "Student") {
+              setFullName(existing.full_name);
+            }
+            if (existing.hall) {
+              setHall(existing.hall);
+            }
           }
         } else {
           // If no session, allow local testing or redirect to login
