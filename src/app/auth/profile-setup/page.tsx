@@ -26,6 +26,7 @@ import { supabase } from "@/lib/supabase/client";
 import { HallType } from "@/types";
 import { extractStudentIdFromEmail } from "@/lib/auth-utils";
 import { normalizeHallSerial } from "@/lib/hall-serial";
+import { submitProfileSetupAction } from "./actions";
 
 const ACADEMIC_SESSIONS = [
   "2025-2026",
@@ -144,16 +145,13 @@ export default function ProfileSetupPage() {
     try {
       const normalizedSerial = normalizeHallSerial(hallSerial || studentId.slice(-3) || "001");
       const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
+      const currentUserId = userId || session?.user?.id;
 
-      const res = await fetch("/api/auth/profile-setup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          userId: userId || session?.user?.id,
+      // Primary: Server Action with cache revalidation
+      let isSuccess = false;
+      try {
+        const actionResult = await submitProfileSetupAction({
+          userId: currentUserId,
           studentId: studentId.trim(),
           fullName: fullName.trim(),
           email: email.trim().toLowerCase(),
@@ -162,20 +160,80 @@ export default function ProfileSetupPage() {
           hall,
           roomNumber: roomNumber.trim(),
           department: department.trim(),
-          session: academicSession.trim(),
+          academicSession: academicSession.trim(),
           phoneNumber: phoneNumber.trim(),
           pin: pin.trim() || "1234",
-          authProvider,
-        }),
-      });
+        });
 
-      const result = await res.json();
-      if (!res.ok || !result.success) {
-        throw new Error(result.error || "Failed to complete profile setup");
+        if (actionResult.success) {
+          isSuccess = true;
+        }
+      } catch (actionErr) {
+        console.warn("[ProfileSetup] Server action fallback to API:", actionErr);
       }
 
-      // Auto-approved! Route directly to student dashboard
-      router.push("/student/dashboard");
+      // Secondary fallback: API route
+      if (!isSuccess) {
+        const token = session?.access_token;
+        const res = await fetch("/api/auth/profile-setup", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            userId: currentUserId,
+            studentId: studentId.trim(),
+            fullName: fullName.trim(),
+            email: email.trim().toLowerCase(),
+            avatarUrl,
+            hallSerial: normalizedSerial,
+            hall,
+            roomNumber: roomNumber.trim(),
+            department: department.trim(),
+            session: academicSession.trim(),
+            phoneNumber: phoneNumber.trim(),
+            pin: pin.trim() || "1234",
+            authProvider,
+          }),
+        });
+
+        const result = await res.json();
+        if (res.ok && result.success) {
+          isSuccess = true;
+        } else {
+          // Direct client-side update fallback
+          if (currentUserId) {
+            const { error: directError } = await supabase
+              .from("users")
+              .update({
+                full_name: fullName.trim(),
+                student_id: studentId.trim(),
+                department: department.trim(),
+                room_number: roomNumber.trim(),
+                hall_serial: parseInt(normalizedSerial.replace(/\D/g, "") || "1", 10),
+                is_onboarded: true,
+                is_approved: true,
+              })
+              .eq("id", currentUserId);
+
+            if (!directError) {
+              isSuccess = true;
+            } else {
+              throw new Error(result.error || directError.message || "Failed to complete profile setup");
+            }
+          } else {
+            throw new Error(result.error || "Failed to complete profile setup");
+          }
+        }
+      }
+
+      // Successful onboarding! Force direct navigation to student dashboard
+      if (typeof window !== "undefined") {
+        window.location.assign("/student/dashboard");
+      } else {
+        router.push("/student/dashboard");
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Error saving profile";
       setErrorMessage(msg);

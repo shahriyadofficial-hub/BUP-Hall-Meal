@@ -42,6 +42,7 @@ interface AdminUserRecord {
   raw_serial: number | null;
   auth_provider: string;
   login_type: "bup_edu" | "personal_gmail";
+  role: "student" | "staff" | "admin";
   is_approved: boolean;
   created_at: string;
 }
@@ -132,6 +133,45 @@ export default function AdminUsersAuditPage() {
       setToastMessage({
         text: `${user.full_name} is now ${nextApproved ? "Active / Approved" : "Blocked"}`,
         type: nextApproved ? "success" : "warning",
+      });
+
+      setTimeout(() => setToastMessage(null), 3500);
+    } catch {
+      playFeedback("error");
+      setToastMessage({ text: "Network error occurred", type: "warning" });
+    } finally {
+      setActionInProgressId(null);
+    }
+  };
+
+  // Instant Role Change handler
+  const handleRoleChange = async (user: AdminUserRecord, nextRole: "student" | "staff" | "admin") => {
+    setActionInProgressId(user.id);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          role: nextRole,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        playFeedback("error");
+        setToastMessage({ text: data.error || "Failed to update role", type: "warning" });
+        return;
+      }
+
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, role: nextRole } : u))
+      );
+
+      playFeedback("success");
+      setToastMessage({
+        text: `${user.full_name}'s role updated to ${nextRole.toUpperCase()}`,
+        type: "success",
       });
 
       setTimeout(() => setToastMessage(null), 3500);
@@ -337,6 +377,7 @@ export default function AdminUsersAuditPage() {
                   <th className="py-3.5 px-4">Student ID</th>
                   <th className="py-3.5 px-4">Department</th>
                   <th className="py-3.5 px-4">Email</th>
+                  <th className="py-3.5 px-4">Role</th>
                   <th className="py-3.5 px-4">Account Type</th>
                   <th className="py-3.5 px-4">Status</th>
                   <th className="py-3.5 px-4 text-right">Audit Action</th>
@@ -345,7 +386,7 @@ export default function AdminUsersAuditPage() {
               <tbody className="divide-y divide-slate-800/50 text-xs text-slate-200">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-slate-400">
+                    <td colSpan={9} className="py-12 text-center text-slate-400">
                       <div className="flex items-center justify-center space-x-2">
                         <RotateCw className="w-5 h-5 animate-spin text-emerald-400" />
                         <span>Loading student directory...</span>
@@ -354,7 +395,7 @@ export default function AdminUsersAuditPage() {
                   </tr>
                 ) : filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-slate-400">
+                    <td colSpan={9} className="py-12 text-center text-slate-400">
                       No students found matching your search and filter criteria.
                     </td>
                   </tr>
@@ -415,6 +456,27 @@ export default function AdminUsersAuditPage() {
                         {/* Email */}
                         <td className="py-3.5 px-4 text-slate-300 font-mono text-[11px] truncate max-w-[220px]" title={user.email}>
                           {user.email}
+                        </td>
+
+                        {/* Role Select Dropdown */}
+                        <td className="py-3.5 px-4">
+                          <select
+                            value={user.role || "student"}
+                            disabled={isProcessing}
+                            onChange={(e) => handleRoleChange(user, e.target.value as "student" | "staff" | "admin")}
+                            className={cn(
+                              "px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all focus:outline-none cursor-pointer",
+                              user.role === "admin"
+                                ? "bg-purple-950/60 border-purple-500/50 text-purple-300"
+                                : user.role === "staff"
+                                ? "bg-blue-950/60 border-blue-500/50 text-blue-300"
+                                : "bg-emerald-950/60 border-emerald-500/50 text-emerald-300"
+                            )}
+                          >
+                            <option value="student" className="bg-slate-900 text-emerald-300">🎓 Student</option>
+                            <option value="staff" className="bg-slate-900 text-blue-300">🛡️ Staff</option>
+                            <option value="admin" className="bg-slate-900 text-purple-300">👑 Admin</option>
+                          </select>
                         </td>
 
                         {/* Account Type Badge */}

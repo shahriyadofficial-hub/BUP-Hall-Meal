@@ -1,6 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { UserRole } from "@/types";
 
 /**
  * Helper to construct redirect response preserving modified cookies
@@ -9,7 +8,7 @@ function createRedirectResponse(targetPath: string, request: NextRequest, baseRe
   const url = new URL(targetPath, request.url);
   const redirectResponse = NextResponse.redirect(url);
   
-  // Forward cookies to prevent session state desynchronization
+  // Forward cookies to maintain session state integrity
   baseResponse.cookies.getAll().forEach((cookie) => {
     redirectResponse.cookies.set(cookie.name, cookie.value);
   });
@@ -18,19 +17,16 @@ function createRedirectResponse(targetPath: string, request: NextRequest, baseRe
 }
 
 /**
- * Task 12: Role-Based Security Middleware, Route Guards & Profile Verification
+ * Role-Based Access Control (RBAC) & Onboarding Gatekeeper Middleware
  * 
- * Enforces strict server-side path interception using @supabase/ssr across:
- * - Unauthenticated session redirects
- * - Profile onboarding verification
- * - Approval state gatekeeping (is_approved === true)
- * - Strict role boundaries (/admin/*, /staff/*, /manager/*, /student/*)
- * - Auth loop suppression for active sessions
+ * Routes:
+ * - student -> /student/dashboard
+ * - staff   -> /counter
+ * - admin   -> /admin
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Initialize Response
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -44,7 +40,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // 2. Initialize Supabase SSR Client with cookie adapter
+  // Initialize Supabase SSR Client
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
@@ -62,42 +58,57 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // 3. Authenticate User Session
+  // Authenticate user
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const isProtectedPath =
     pathname.startsWith("/student") ||
-    pathname.startsWith("/staff") ||
     pathname.startsWith("/counter") ||
     pathname.startsWith("/admin") ||
-    pathname.startsWith("/manager");
+    pathname.startsWith("/staff") ||
+    pathname.startsWith("/manager") ||
+    pathname === "/auth/profile-setup";
 
   const isAuthPath =
     pathname === "/auth/login" ||
-    pathname === "/auth/onboarding" ||
     pathname === "/auth/profile-setup" ||
-    pathname === "/auth/pending";
+    pathname === "/auth/onboarding";
 
-  // 4. Rule: Unauthenticated Users
+  // 1. Unauthenticated users accessing protected routes
   if (!user) {
     if (isProtectedPath) {
-      const redirectUrl = `/auth/login?redirect=${encodeURIComponent(pathname)}`;
-      return createRedirectResponse(redirectUrl, request, response);
+      const loginUrl = `/auth/login?redirect=${encodeURIComponent(pathname)}`;
+      return createRedirectResponse(loginUrl, request, response);
     }
     return response;
   }
 
-  // 5. Fetch Profile Row from public.users
+  // 2. Fetch user's profile from public.users
   const { data: profile } = await supabase
     .from("users")
-    .select("id, role, is_approved, student_id, room_number")
+    .select("id, role, is_onboarded, student_id, room_number")
     .eq("id", user.id)
     .maybeSingle();
 
-  // 6. Rule: Profile Setup Check (User in auth.users but has not completed profile)
-  if (!profile || !profile.student_id) {
+  const isOnboarded = Boolean(
+    profile?.is_onboarded === true ||
+    (profile?.is_onboarded !== false && profile?.student_id && profile?.room_number)
+  );
+
+  const role = (profile?.role as "student" | "staff" | "admin") || "student";
+
+  // Determine home landing page by role
+  let homePage = "/student/dashboard";
+  if (role === "admin") {
+    homePage = "/admin";
+  } else if (role === "staff") {
+    homePage = "/counter";
+  }
+
+  // 3. If NOT onboarded and not currently on /auth/profile-setup
+  if (!isOnboarded) {
     if (
       pathname !== "/auth/profile-setup" &&
       pathname !== "/auth/onboarding" &&
@@ -110,62 +121,34 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // 7. Rule: Approval Check (Profile exists but is_approved === false)
-  if (profile.is_approved === false) {
-    if (pathname !== "/auth/pending" && !pathname.startsWith("/api") && !pathname.startsWith("/auth/logout")) {
-      return createRedirectResponse("/auth/pending", request, response);
-    }
-    return response;
-  }
-
-  // Determine user's designated landing route based on role
-  const userRole: UserRole = (profile.role as UserRole) || "student";
-  let defaultDashboard = "/student/dashboard";
-  if (userRole === "admin") {
-    defaultDashboard = "/admin/users";
-  } else if (userRole === "staff" || userRole === "manager") {
-    defaultDashboard = "/counter";
-  }
-
-  // 8. Rule: Auth Flow Loop Prevention
+  // 4. If ONBOARDED and visiting auth pages (/auth/login or /auth/profile-setup)
   if (isAuthPath) {
-    return createRedirectResponse(defaultDashboard, request, response);
+    return createRedirectResponse(homePage, request, response);
   }
 
-  // 9. Rule: Role-Based Route Boundaries
+  // 5. Role-based route restrictions
+  // /admin/* requires role === 'admin'
   if (pathname.startsWith("/admin")) {
-    if (userRole !== "admin") {
-      return createRedirectResponse("/student/dashboard", request, response);
+    if (role !== "admin") {
+      return createRedirectResponse(homePage, request, response);
     }
   }
 
-  if (pathname.startsWith("/staff") || pathname.startsWith("/counter")) {
-    if (userRole !== "staff" && userRole !== "manager" && userRole !== "admin") {
-      return createRedirectResponse("/student/dashboard", request, response);
+  // /counter/* requires role IN ('staff', 'admin')
+  if (pathname.startsWith("/counter") || pathname.startsWith("/staff")) {
+    if (role !== "staff" && role !== "admin") {
+      return createRedirectResponse(homePage, request, response);
     }
   }
 
-  // /manager/*: Accessible only by role IN ('manager', 'admin')
-  if (pathname.startsWith("/manager")) {
-    if (userRole !== "manager" && userRole !== "admin") {
-      return createRedirectResponse("/student/dashboard", request, response);
-    }
-  }
-
-  // /student/*: Student views
+  // /student/* requires valid authenticated onboarded user (students, staff, admin can view)
   if (pathname.startsWith("/student")) {
-    // If staff or manager accesses /student/dashboard, allow view or redirect to landing screen
-    // Students trying to access admin/staff routes are already blocked above
     return response;
   }
 
   return response;
 }
 
-/**
- * Matcher Optimization
- * Bypasses static assets, Next.js internal chunks, favicon, manifest, and image formats
- */
 export const config = {
   matcher: [
     "/((?!_next/static|_next/image|favicon.ico|manifest.json|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",

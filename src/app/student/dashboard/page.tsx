@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -1416,6 +1417,17 @@ export default function StudentDashboardPage() {
                     : monthlyStats.dinner}
                 </span>
               </div>
+            </div>
+
+            {/* Link to Full Monthly History Ledger */}
+            <div className="pt-2">
+              <Link
+                href="/student/history"
+                className="w-full py-3 px-4 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-bold text-xs sm:text-sm font-bengali flex items-center justify-center space-x-2 transition-all shadow-sm"
+              >
+                <Calendar className="w-4 h-4" />
+                <span>{isBengali ? "📜 পুরো মাসের বিস্তারিত মিল হিস্ট্রি দেখুন" : "View Full Monthly Meal History"}</span>
+              </Link>
             </div>
 
             {/* Explicit Zero-Price Rule Compliance Note */}

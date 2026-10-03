@@ -105,6 +105,7 @@ export async function POST(request: NextRequest) {
       totp_secret: totpSecret,
       dining_pin_hash: finalPinHash,
       is_approved: true, // Default: true for all completed profiles
+      is_onboarded: true,
       hall_serial: formattedSerial,
       auth_provider: authProvider || "google",
       login_type: loginType,
@@ -128,6 +129,7 @@ export async function POST(request: NextRequest) {
       totp_secret: totpSecret,
       dining_pin_hash: finalPinHash,
       is_approved: true,
+      is_onboarded: true,
       updated_at: new Date().toISOString(),
     };
 

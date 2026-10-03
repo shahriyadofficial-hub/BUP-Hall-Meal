@@ -34,9 +34,11 @@ export async function GET(request: NextRequest) {
         profile_photo_url: u.profile_photo_url || u.avatar_url || null,
         hall_serial: formatHallSerial(u.hall_serial, u.student_id),
         raw_serial: u.hall_serial || null,
+        role: u.role || "student",
         auth_provider: u.auth_provider || "google",
         login_type: isEdu ? "bup_edu" : "personal_gmail",
         is_approved: u.is_approved !== false, // true by default
+        is_onboarded: u.is_onboarded !== false,
         created_at: u.created_at || new Date().toISOString(),
       };
     });
@@ -60,11 +62,30 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, is_approved } = body;
+    const { userId, is_approved, role } = body;
 
-    if (!userId || typeof is_approved !== "boolean") {
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: "Missing required fields: userId, is_approved" },
+        { success: false, error: "Missing required field: userId" },
+        { status: 400 }
+      );
+    }
+
+    const updates: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (typeof is_approved === "boolean") {
+      updates.is_approved = is_approved;
+    }
+
+    if (role && ["student", "staff", "admin"].includes(role)) {
+      updates.role = role;
+    }
+
+    if (Object.keys(updates).length === 1) {
+      return NextResponse.json(
+        { success: false, error: "No valid fields to update (is_approved or role required)" },
         { status: 400 }
       );
     }
@@ -73,7 +94,7 @@ export async function PATCH(request: NextRequest) {
 
     const { data: updated, error } = await supabaseAdmin
       .from("users")
-      .update({ is_approved })
+      .update(updates)
       .eq("id", userId)
       .select()
       .single();
@@ -85,10 +106,10 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({
       success: true,
       user: updated,
-      message: `User status updated to ${is_approved ? "Active" : "Blocked"}`,
+      message: `User updated successfully`,
     });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Failed to update user status";
+    const msg = err instanceof Error ? err.message : "Failed to update user";
     return NextResponse.json({ success: false, error: msg }, { status: 500 });
   }
 }

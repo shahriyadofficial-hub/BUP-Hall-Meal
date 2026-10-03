@@ -189,6 +189,7 @@ export async function POST(request: NextRequest) {
       totp_secret: totpSecret,
       dining_pin_hash: finalPinHash,
       is_approved: isApproved,
+      is_onboarded: true,
       updated_at: new Date().toISOString(),
     };
 

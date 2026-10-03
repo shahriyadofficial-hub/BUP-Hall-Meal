@@ -79,6 +79,18 @@ export default function CounterTerminalPage() {
   // Stats for today's shift counter
   const [sessionCount, setSessionCount] = useState(0);
 
+  // Today's Recent Distribution Log Feed
+  interface RecentClaim {
+    id: string;
+    serial: string;
+    name: string;
+    studentId: string;
+    room: string;
+    time: string;
+    shift: MealType;
+  }
+  const [recentClaims, setRecentClaims] = useState<RecentClaim[]>([]);
+
   // References
   const inputRef = useRef<HTMLInputElement>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -171,6 +183,28 @@ export default function CounterTerminalPage() {
 
       if (isSoundEnabled) playFeedback("success");
       setSessionCount((prev) => prev + 1);
+
+      // Append to today's distribution log
+      const timeStr = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Dhaka",
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      }).format(new Date());
+
+      setRecentClaims((prev) => [
+        {
+          id: String(Date.now()),
+          serial: selectedStudent.hall_serial,
+          name: selectedStudent.full_name,
+          studentId: selectedStudent.student_id,
+          room: selectedStudent.room_number,
+          time: timeStr,
+          shift: activeShift,
+        },
+        ...prev.slice(0, 19),
+      ]);
 
       // Flash success message
       setClaimSuccessMessage(
@@ -532,6 +566,48 @@ export default function CounterTerminalPage() {
                   <span>{searchError}</span>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: TODAY'S LIVE DISTRIBUTION LOG */}
+        {recentClaims.length > 0 && (
+          <div className="w-full max-w-lg rounded-3xl p-5 bg-slate-900/80 backdrop-blur-2xl border border-slate-800 shadow-xl space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <div className="flex items-center space-x-2">
+                <Clock className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider">
+                  Today's Live Claim Log / আজকের বিতরণ লগ
+                </h3>
+              </div>
+              <span className="text-[11px] font-mono text-emerald-400 font-bold">
+                {recentClaims.length} served
+              </span>
+            </div>
+
+            <div className="divide-y divide-slate-800/60 max-h-56 overflow-y-auto pr-1">
+              {recentClaims.map((claim) => (
+                <div key={claim.id} className="py-2.5 flex items-center justify-between text-xs">
+                  <div className="flex items-center space-x-2.5">
+                    <span className="px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono font-bold text-[11px]">
+                      #{claim.serial}
+                    </span>
+                    <div className="truncate">
+                      <p className="font-semibold text-slate-200 truncate">{claim.name}</p>
+                      <p className="text-[10px] text-slate-400 font-mono">
+                        ID: {claim.studentId} • Room {claim.room}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-right flex-shrink-0">
+                    <span className="text-[11px] font-mono text-slate-300 block">{claim.time}</span>
+                    <span className="text-[10px] font-bold text-emerald-400 uppercase">
+                      ✓ {claim.shift}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

@@ -148,17 +148,34 @@ export async function POST(request: NextRequest) {
     const newLogRecord = {
       user_id: user.id,
       consumed_date: todayStr,
+      meal_date: todayStr,
       meal_type: meal_type || "lunch",
       status: "consumed",
       method: mode === "pin" ? "pin_fallback" : "qr_scan",
       consumed_at: nowIso,
+      claimed_at: nowIso,
     };
 
-    const { data: insertedLog, error: insertError } = await supabaseAdmin
+    let { data: insertedLog, error: insertError } = await supabaseAdmin
       .from("meal_logs")
       .insert(newLogRecord)
       .select()
       .maybeSingle();
+
+    if (insertError) {
+      // Fallback: try inserting without extra columns if older table structure
+      const baseRecord = {
+        user_id: user.id,
+        meal_type: meal_type || "lunch",
+        status: "consumed",
+      };
+      const fallbackResult = await supabaseAdmin
+        .from("meal_logs")
+        .insert(baseRecord)
+        .select()
+        .maybeSingle();
+      insertedLog = fallbackResult.data;
+    }
 
     const logId = insertedLog?.id || crypto.randomUUID();
 
