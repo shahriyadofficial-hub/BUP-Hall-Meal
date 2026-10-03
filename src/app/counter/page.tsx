@@ -17,6 +17,9 @@ import {
   CameraOff,
   User,
   ShieldCheck,
+  ShieldAlert,
+  Lock,
+  Square,
   RotateCw,
   Sparkles,
   Volume2,
@@ -278,30 +281,104 @@ export default function CounterTerminalPage() {
     }
   };
 
-  // Camera QR Scanner Lifecycle
+  // Camera permission, security, and hardware states
+  const [isSecureContextVerified, setIsSecureContextVerified] = useState<boolean>(true);
+  const [isMediaSupported, setIsMediaSupported] = useState<boolean>(true);
+  const [cameraState, setCameraState] = useState<
+    "idle" | "requesting" | "running" | "denied" | "not_found" | "error"
+  >("idle");
+  const [cameraErrorDetail, setCameraErrorDetail] = useState<string | null>(null);
+
+  // Check browser security and media capabilities on client mount
   useEffect(() => {
-    if (activeTab !== "scanner") {
-      if (scannerRef.current && isScanningRef.current) {
-        scannerRef.current
-          .stop()
-          .then(() => {
-            scannerRef.current?.clear();
-            isScanningRef.current = false;
-          })
-          .catch(() => {});
+    if (typeof window !== "undefined") {
+      if (!window.isSecureContext) {
+        setIsSecureContextVerified(false);
       }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setIsMediaSupported(false);
+      }
+    }
+  }, []);
+
+  // Safe camera stop
+  const stopCamera = useCallback(async () => {
+    if (scannerRef.current && isScanningRef.current) {
+      try {
+        await scannerRef.current.stop();
+        scannerRef.current.clear();
+      } catch (err) {
+        console.warn("[Counter Camera] Stop warning:", err);
+      }
+      isScanningRef.current = false;
+    }
+    setCameraState("idle");
+  }, []);
+
+  // User-initiated camera start with permission checks
+  const startCamera = useCallback(async () => {
+    setCameraErrorDetail(null);
+    setSearchError(null);
+
+    if (typeof window === "undefined") return;
+
+    // 1. Strict Security Check
+    if (!window.isSecureContext) {
+      setIsSecureContextVerified(false);
+      setCameraState("error");
+      setCameraErrorDetail(
+        "Camera requires a secure HTTPS connection or localhost. Please test via your Vercel deployment URL or configure HTTPS."
+      );
       return;
     }
 
-    const html5Qr = new Html5Qrcode("counter-qr-reader", {
-      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-      verbose: false,
-    });
-    scannerRef.current = html5Qr;
+    // 2. Browser Feature Check
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setIsMediaSupported(false);
+      setCameraState("error");
+      setCameraErrorDetail(
+        "Camera access is not supported by this browser. Please use the Hall Serial keypad below."
+      );
+      return;
+    }
 
-    html5Qr
-      .start(
-        { facingMode: "environment" },
+    setCameraState("requesting");
+
+    try {
+      // 3. User-Initiated Permission Request with ideal environment facingMode
+      const testStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+      });
+
+      // Release probe stream tracks so Html5Qrcode gets exclusive hardware access
+      testStream.getTracks().forEach((track) => track.stop());
+
+      // 4. Ensure target DOM element is rendered
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      const targetEl = document.getElementById("counter-qr-reader");
+      if (!targetEl) {
+        throw new Error("Scanner viewport is mounting. Please try again.");
+      }
+
+      // Stop existing instance if running
+      if (scannerRef.current && isScanningRef.current) {
+        try {
+          await scannerRef.current.stop();
+          scannerRef.current.clear();
+        } catch {
+          // ignore
+        }
+        isScanningRef.current = false;
+      }
+
+      const html5Qr = new Html5Qrcode("counter-qr-reader", {
+        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+        verbose: false,
+      });
+      scannerRef.current = html5Qr;
+
+      await html5Qr.start(
+        { facingMode: { ideal: "environment" } },
         {
           fps: 15,
           qrbox: { width: 250, height: 250 },
@@ -316,26 +393,48 @@ export default function CounterTerminalPage() {
           }, 2000);
         },
         () => {
-          // ignore scan frame misses
+          // Frame miss (ignore)
         }
-      )
-      .then(() => {
-        isScanningRef.current = true;
-      })
-      .catch((err) => {
-        console.warn("QR Scanner init failure:", err);
-      });
+      );
 
-    return () => {
-      if (html5Qr && isScanningRef.current) {
-        html5Qr
-          .stop()
-          .then(() => html5Qr.clear())
-          .catch(() => {});
-        isScanningRef.current = false;
+      isScanningRef.current = true;
+      setCameraState("running");
+    } catch (err: unknown) {
+      isScanningRef.current = false;
+      const errorName = err instanceof Error ? err.name : "";
+      const errorMsg = err instanceof Error ? err.message : String(err);
+
+      if (errorName === "NotAllowedError" || errorName === "PermissionDeniedError") {
+        setCameraState("denied");
+        setCameraErrorDetail(
+          "Camera permission is blocked. Please tap the lock icon in your browser address bar and set Camera to 'Allow'."
+        );
+      } else if (errorName === "NotFoundError" || errorName === "DevicesNotFoundError") {
+        setCameraState("not_found");
+        setCameraErrorDetail("No camera hardware detected on this device.");
+      } else if (errorName === "NotReadableError" || errorName === "TrackStartError") {
+        setCameraState("error");
+        setCameraErrorDetail("Camera is currently in use by another application or browser tab.");
+      } else {
+        setCameraState("error");
+        setCameraErrorDetail(
+          errorMsg.includes("isSecureContext")
+            ? "Camera requires a secure HTTPS connection or localhost. Please test via your Vercel deployment URL or configure HTTPS."
+            : `Camera initialization error: ${errorMsg}`
+        );
       }
+    }
+  }, [handleLookup]);
+
+  // Clean up camera stream on tab switch away or component unmount
+  useEffect(() => {
+    if (activeTab !== "scanner") {
+      stopCamera();
+    }
+    return () => {
+      stopCamera();
     };
-  }, [activeTab, handleLookup]);
+  }, [activeTab, stopCamera]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-200">
@@ -537,22 +636,193 @@ export default function CounterTerminalPage() {
         {/* TAB 2: CAMERA QR SCANNER */}
         {activeTab === "scanner" && (
           <div className="w-full max-w-lg space-y-4">
+            {/* Security Check Alert (if non-secure context) */}
+            {!isSecureContextVerified && (
+              <div className="rounded-2xl p-4 bg-amber-950/80 border border-amber-500/50 text-amber-200 text-xs sm:text-sm space-y-2 shadow-amber-glow backdrop-blur-xl">
+                <div className="flex items-center space-x-2 font-bold text-amber-300">
+                  <ShieldAlert className="w-5 h-5 flex-shrink-0" />
+                  <span>HTTPS Security Notice</span>
+                </div>
+                <p className="leading-relaxed">
+                  Camera requires a secure HTTPS connection or localhost. Please test via your Vercel deployment URL or configure HTTPS.
+                </p>
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("serial")}
+                    className="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-sm"
+                  >
+                    Use Hall Serial Number Keypad Instead
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Permission Denied Alert Guidance */}
+            {cameraState === "denied" && (
+              <div className="rounded-2xl p-4 bg-rose-950/80 border border-rose-500/50 text-rose-200 text-xs sm:text-sm space-y-2.5 shadow-crimson-glow backdrop-blur-xl">
+                <div className="flex items-center space-x-2 font-bold text-rose-300">
+                  <Lock className="w-5 h-5 flex-shrink-0" />
+                  <span>Camera Permission Blocked</span>
+                </div>
+                <p className="leading-relaxed">
+                  Camera permission is blocked. Please tap the lock icon in your browser address bar and set Camera to &apos;Allow&apos;.
+                </p>
+                <div className="flex items-center space-x-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={startCamera}
+                    className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center space-x-1.5 transition-all shadow-sm"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" />
+                    <span>Try Again</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("serial")}
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 transition-all"
+                  >
+                    Switch to Serial Keypad
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Hardware Not Found Alert Guidance */}
+            {cameraState === "not_found" && (
+              <div className="rounded-2xl p-4 bg-slate-900 border border-slate-700 text-slate-300 text-xs sm:text-sm space-y-2">
+                <div className="flex items-center space-x-2 font-bold text-amber-300">
+                  <CameraOff className="w-5 h-5 flex-shrink-0" />
+                  <span>No Camera Detected</span>
+                </div>
+                <p className="leading-relaxed">
+                  No camera hardware detected on this device. Please use the quick Hall Serial input box below.
+                </p>
+              </div>
+            )}
+
+            {/* Other Camera Error Alert */}
+            {cameraState === "error" && cameraErrorDetail && (
+              <div className="rounded-2xl p-4 bg-rose-950/70 border border-rose-500/40 text-rose-200 text-xs sm:text-sm space-y-2">
+                <div className="flex items-center space-x-2 font-bold text-rose-300">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <span>Camera Issue</span>
+                </div>
+                <p className="leading-relaxed">{cameraErrorDetail}</p>
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={startCamera}
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 flex items-center space-x-1"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" />
+                    <span>Retry Camera</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Camera Viewport Card */}
             <div className="rounded-3xl p-5 bg-slate-900/80 backdrop-blur-2xl border border-slate-800 shadow-2xl flex flex-col items-center space-y-4">
+              {/* Header Status Row */}
               <div className="flex items-center justify-between w-full text-xs text-slate-400 px-1">
-                <span className="flex items-center space-x-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span>Camera Active: Auto-Scanning Student QR</span>
-                </span>
-                <span className="font-mono text-emerald-400 uppercase">{activeShift} Shift</span>
+                {cameraState === "running" ? (
+                  <span className="flex items-center space-x-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                    <span className="font-semibold text-emerald-300">Camera Active: Auto-Scanning QR</span>
+                  </span>
+                ) : cameraState === "requesting" ? (
+                  <span className="flex items-center space-x-1.5 text-amber-300">
+                    <RotateCw className="w-3 h-3 animate-spin" />
+                    <span>Requesting Permission...</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center space-x-1.5 text-slate-400">
+                    <Camera className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Optical Scanner</span>
+                  </span>
+                )}
+
+                <div className="flex items-center space-x-2">
+                  <span className="font-mono text-emerald-400 uppercase text-[11px]">{activeShift} Shift</span>
+                  {cameraState === "running" && (
+                    <button
+                      type="button"
+                      onClick={stopCamera}
+                      className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-rose-300 border border-slate-700 hover:border-rose-500/30 text-[11px] font-semibold flex items-center space-x-1 transition-all"
+                    >
+                      <Square className="w-2.5 h-2.5 fill-current" />
+                      <span>Stop</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* QR Video Viewport */}
-              <div className="relative w-full aspect-square max-w-xs rounded-2xl overflow-hidden bg-slate-950 border-2 border-emerald-500/50 shadow-inner flex items-center justify-center">
-                <div id="counter-qr-reader" className="w-full h-full" />
-                {/* Visual Reticle Corner Frame */}
-                <div className="absolute inset-4 pointer-events-none border-2 border-dashed border-emerald-400/50 rounded-xl" />
+              {/* QR Video Viewport & Interaction Area */}
+              <div className="relative w-full aspect-square max-w-xs rounded-2xl overflow-hidden bg-slate-950 border-2 border-emerald-500/40 shadow-inner flex items-center justify-center">
+                {/* HTML5 QR Container (Target DOM node) */}
+                <div
+                  id="counter-qr-reader"
+                  className={cn("w-full h-full", cameraState !== "running" && "hidden")}
+                />
+
+                {/* Reticle Corner Overlay when running */}
+                {cameraState === "running" && (
+                  <div className="absolute inset-4 pointer-events-none border-2 border-dashed border-emerald-400/60 rounded-xl" />
+                )}
+
+                {/* Idle State: Explicit User Action to Start Camera */}
+                {cameraState === "idle" && (
+                  <div className="flex flex-col items-center justify-center p-6 space-y-4 text-center z-10">
+                    <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-inner">
+                      <Camera className="w-8 h-8" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-bold text-slate-100">Camera Scanner Ready</h3>
+                      <p className="text-xs text-slate-400 max-w-[220px]">
+                        Tap below to start scanner and trigger browser permission
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={startCamera}
+                      className="px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold text-sm shadow-emerald-glow transition-all flex items-center space-x-2"
+                    >
+                      <Camera className="w-4 h-4 font-bold" />
+                      <span>Start Camera Scanner</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Requesting State */}
+                {cameraState === "requesting" && (
+                  <div className="flex flex-col items-center justify-center p-6 space-y-3 text-center z-10">
+                    <RotateCw className="w-8 h-8 text-emerald-400 animate-spin" />
+                    <p className="text-sm font-bold text-slate-100">Requesting Permission...</p>
+                    <p className="text-xs text-slate-400 max-w-[200px]">
+                      Please tap &apos;Allow&apos; when prompted by your browser
+                    </p>
+                  </div>
+                )}
+
+                {/* Denied / Error State Viewport Fallback */}
+                {(cameraState === "denied" || cameraState === "not_found" || cameraState === "error") && (
+                  <div className="flex flex-col items-center justify-center p-6 space-y-3 text-center z-10">
+                    <CameraOff className="w-10 h-10 text-rose-400/80" />
+                    <p className="text-xs font-semibold text-rose-300">Camera Offline</p>
+                    <button
+                      type="button"
+                      onClick={startCamera}
+                      className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 flex items-center space-x-1"
+                    >
+                      <RotateCw className="w-3 h-3" />
+                      <span>Retry</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
+              {/* In-Flight Student Lookup State */}
               {isSearching && (
                 <div className="flex items-center space-x-2 text-xs font-semibold text-emerald-300 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/30 animate-pulse">
                   <RotateCw className="w-3.5 h-3.5 animate-spin" />
@@ -560,12 +830,69 @@ export default function CounterTerminalPage() {
                 </div>
               )}
 
+              {/* Search Error Notice */}
               {searchError && (
                 <div className="w-full p-3 rounded-xl bg-rose-950/80 border border-rose-500/40 text-rose-300 text-xs flex items-center space-x-2">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   <span>{searchError}</span>
                 </div>
               )}
+            </div>
+
+            {/* SEAMLESS FALLBACK: QUICK HALL SERIAL INPUT BOX */}
+            <div className="rounded-3xl p-5 bg-slate-900/80 backdrop-blur-2xl border border-slate-800 shadow-xl space-y-3">
+              <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+                <div className="flex items-center space-x-1.5 font-semibold text-slate-200">
+                  <Hash className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Fast Fallback: Enter Hall Serial Number</span>
+                </div>
+                <span className="font-mono text-emerald-400 text-[11px]">1 to 3 digits</span>
+              </div>
+
+              <form onSubmit={handleSerialSubmit} className="flex items-center space-x-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-mono font-bold text-slate-500 select-none">
+                    #
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={serialInput}
+                    onChange={(e) => setSerialInput(e.target.value.replace(/\D/g, ""))}
+                    placeholder="000"
+                    maxLength={5}
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-lg font-mono font-bold text-emerald-300 focus:outline-none focus:border-emerald-400 placeholder:text-slate-700"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={!serialInput.trim() || isSearching}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-slate-950 font-bold text-sm shadow-emerald-glow transition-all flex items-center space-x-1"
+                >
+                  {isSearching ? (
+                    <RotateCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <span>Find</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 pt-0.5">
+                <span>Type Serial # and hit Enter to claim</span>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("serial")}
+                  className="text-emerald-400 hover:underline font-semibold flex items-center space-x-1"
+                >
+                  <Keyboard className="w-3 h-3" />
+                  <span>Open Full Keypad</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
