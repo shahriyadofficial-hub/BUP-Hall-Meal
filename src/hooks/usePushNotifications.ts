@@ -42,6 +42,7 @@ export function usePushNotifications(userId?: string | null): PushNotificationHo
   const [isLoading, setIsLoading] = useState(false);
   const [foregroundMessage, setForegroundMessage] = useState<MessagePayload | null>(null);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
 
   // 1. Check browser feature support
   useEffect(() => {
@@ -53,6 +54,13 @@ export function usePushNotifications(userId?: string | null): PushNotificationHo
       setIsSupported(true);
       setPermission(Notification.permission);
     }
+
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
+    };
   }, []);
 
   /**
@@ -129,8 +137,13 @@ export function usePushNotifications(userId?: string | null): PushNotificationHo
         }
       }
 
-      // 5. Setup foreground message listener
-      onMessage(messaging, (payload) => {
+      // 5. Setup foreground message listener with cleanup
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
+
+      unsubscribeRef.current = onMessage(messaging, (payload) => {
         console.log("[PushNotifications] Foreground message received:", payload);
         setForegroundMessage(payload);
 

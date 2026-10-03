@@ -93,8 +93,10 @@ export async function POST(request: NextRequest) {
 
     // 2. Fetch student user profile
     let query = supabaseAdmin.from("users").select("*");
-    if (studentUid) {
+    if (studentUid && studentId) {
       query = query.or(`id.eq.${studentUid},student_id.eq.${studentId}`);
+    } else if (studentUid) {
+      query = query.eq("id", studentUid);
     } else {
       query = query.eq("student_id", studentId);
     }

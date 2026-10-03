@@ -172,8 +172,11 @@ export default function MessManagerKitchenPage() {
       `bup_dining_kitchen_slip_${dashboardData.dates.targetDate}.csv`
     );
     document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      link.click();
+    } finally {
+      document.body.removeChild(link);
+    }
   };
 
   const cookSlip = dashboardData?.cookSlip;

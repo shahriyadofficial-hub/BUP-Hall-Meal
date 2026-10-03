@@ -1,47 +1,7 @@
-import { initializeApp, getApps, cert, App } from "firebase-admin/app";
-import { getMessaging, Message } from "firebase-admin/messaging";
+import { getFirebaseMessaging } from "@/lib/firebaseAdmin";
+import { Message } from "firebase-admin/messaging";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { MealType } from "@/types";
-
-/**
- * Singleton Firebase Admin Initializer
- */
-function getFirebaseAdminApp(): App | null {
-  try {
-    const existingApps = getApps();
-    if (existingApps.length > 0) {
-      return existingApps[0]!;
-    }
-
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-
-    if (!projectId || !clientEmail || !privateKey) {
-      console.warn(
-        "[Notifications] Firebase Admin credentials not fully configured in environment."
-      );
-      return null;
-    }
-
-    // Replace literal escaped newlines with actual newlines
-    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
-      privateKey = privateKey.slice(1, -1);
-    }
-    privateKey = privateKey.replace(/\\n/g, "\n");
-
-    return initializeApp({
-      credential: cert({
-        projectId,
-        clientEmail,
-        privateKey,
-      }),
-    });
-  } catch (err) {
-    console.error("[Notifications] Firebase Admin initialization error:", err);
-    return null;
-  }
-}
 
 /**
  * Returns Bengali & English shift terminology
@@ -61,7 +21,7 @@ function getShiftLabel(mealType: MealType): { bn: string; en: string } {
 /**
  * Dispatches an instant high-priority Web Push Notification to a student
  * immediately after their meal has been verified and logged at the counter.
- * 
+ *
  * @param userId UUID of the student
  * @param mealType 'breakfast' | 'lunch' | 'dinner'
  */
@@ -89,17 +49,18 @@ export async function sendMealPushAlert(
       return { success: false, error: "no_fcm_token" };
     }
 
-    // 2. Initialize Firebase Admin App
-    const app = getFirebaseAdminApp();
-    if (!app) {
+    // 2. Get Firebase Messaging via the shared singleton (no duplicate initializeApp)
+    let messaging;
+    try {
+      messaging = getFirebaseMessaging();
+    } catch {
       return { success: false, error: "firebase_admin_uninitialized" };
     }
 
-    const messaging = getMessaging(app);
     const shift = getShiftLabel(mealType);
 
     const title = "মিল নিশ্চিতকরণ / Meal Confirmation";
-    const body = `আপনার ${shift.bn} মিল সফলভাবে সংগ্রহ করা হয়েছে। অপরিচিত হলে রিপোর্ট করুন। / Your ${shift.en} meal has been collected. Report if not you.`;
+    const body = `আপনার ${shift.bn} মিল সফলভাবে সংগ্রহ করা হয়েছে। অপরিচিত হলে রিপোর্ট করুন। / Your ${shift.en} meal has been collected. Report if not you.`;
 
     // 3. Construct Message Payload
     const message: Message = {
@@ -140,11 +101,8 @@ export async function sendMealPushAlert(
     const errorMsg = err instanceof Error ? err.message : String(err);
     console.error("[Notifications] Failed to send meal push alert:", errorMsg);
 
-    // If token is invalid or unregistered, clear from database
-    if (
-      errorMsg.includes("registration-token-not-registered") ||
-      errorMsg.includes("invalid-argument")
-    ) {
+    // If token is unregistered, clear from database
+    if (errorMsg.includes("registration-token-not-registered")) {
       try {
         const supabaseAdmin = createSupabaseAdminClient();
         await supabaseAdmin

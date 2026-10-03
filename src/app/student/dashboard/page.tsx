@@ -165,12 +165,13 @@ export default function StudentDashboardPage() {
     if (isCutoffLocked) {
       return { hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 };
     }
-    const totalSec =
-      (21 - bstTime.hour) * 3600 + (59 - bstTime.minute) * 60 + (60 - bstTime.second);
-    const hours = Math.floor(totalSec / 3600);
-    const minutes = Math.floor((totalSec % 3600) / 60);
-    const seconds = totalSec % 60;
-    return { hours, minutes, seconds, totalSeconds: totalSec };
+    // Correct: seconds remaining = (22:00:00 BST) - (current BST time)
+    const totalSec = (22 - bstTime.hour) * 3600 - bstTime.minute * 60 - bstTime.second;
+    const clamped = Math.max(0, totalSec);
+    const hours = Math.floor(clamped / 3600);
+    const minutes = Math.floor((clamped % 3600) / 60);
+    const seconds = clamped % 60;
+    return { hours, minutes, seconds, totalSeconds: clamped };
   }, [isCutoffLocked, bstTime.hour, bstTime.minute, bstTime.second]);
 
   // Current active meal shift based on BST hour
@@ -462,7 +463,7 @@ export default function StudentDashboardPage() {
     } finally {
       setIsLoadingProfile(false);
     }
-  }, [bstTime.year, bstTime.month, isBengali]);
+  }, [bstTime.year, bstTime.month, isBengali, profile]);
 
   useEffect(() => {
     loadDashboardData();
