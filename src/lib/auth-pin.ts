@@ -1,14 +1,14 @@
 import crypto from "crypto";
+import { isBUPEduEmail, extractStudentIdFromEmail } from "./auth-utils";
+
+export { isBUPEduEmail, extractStudentIdFromEmail };
 
 /**
- * Validates whether an email belongs strictly to the @bup.edu.bd domain
+ * Validates whether an email belongs strictly to BUP institutional domains
+ * (@student.bup.edu.bd or @bup.edu.bd)
  */
 export function isValidBupEmail(email: string): boolean {
-  if (!email || typeof email !== "string") return false;
-  const normalized = email.trim().toLowerCase();
-  // Valid email pattern ending strictly with @bup.edu.bd
-  const bupEmailRegex = /^[a-zA-Z0-9._%+-]+@bup\.edu\.bd$/i;
-  return bupEmailRegex.test(normalized);
+  return isBUPEduEmail(email);
 }
 
 /**

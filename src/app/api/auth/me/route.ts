@@ -78,6 +78,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Auto-approve users with official BUP edu emails if previously unapproved
+    const { isBUPEduEmail } = await import("@/lib/auth-utils");
+    if (!profile.is_approved && isBUPEduEmail(profile.email)) {
+      await supabaseAdmin.from("users").update({ is_approved: true }).eq("id", profile.id);
+      profile.is_approved = true;
+    }
+
     return NextResponse.json({
       authenticated: true,
       authUserId: profile.id,

@@ -76,6 +76,10 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS department VARCHAR(100);
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS blood_group VARCHAR(10);
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS session VARCHAR(50);
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS hall_serial VARCHAR(10);
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(50) DEFAULT 'google';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS login_type VARCHAR(50) DEFAULT 'personal_gmail';
 ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_email_check;
 
 -- Table: public.meal_bookings

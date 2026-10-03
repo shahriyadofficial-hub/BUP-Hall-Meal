@@ -33,6 +33,7 @@ import { DynamicQRCard } from "@/components/DynamicQRCard";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { supabase } from "@/lib/supabase/client";
 import { toBengaliDigits, cn } from "@/lib/utils";
+import { formatHallSerial } from "@/lib/hall-serial";
 import { MealType } from "@/types";
 
 interface StudentProfile {
@@ -46,6 +47,8 @@ interface StudentProfile {
   hall?: "male" | "female";
   room_number?: string;
   profile_photo_url?: string | null;
+  avatar_url?: string | null;
+  hall_serial?: number | string | null;
   dining_pin?: string;
 }
 
@@ -203,6 +206,18 @@ export default function StudentDashboardPage() {
     dinner: true,
   });
 
+  const [todayConsumed, setTodayConsumed] = useState<{
+    breakfast: boolean;
+    lunch: boolean;
+    dinner: boolean;
+    consumedAt: { breakfast?: string; lunch?: string; dinner?: string };
+  }>({
+    breakfast: false,
+    lunch: false,
+    dinner: false,
+    consumedAt: {},
+  });
+
   const [isUpdatingBooking, setIsUpdatingBooking] = useState<MealType | null>(null);
 
   // --------------------------------------------------------------------------
@@ -266,13 +281,26 @@ export default function StudentDashboardPage() {
             meal_type: MealType;
             consumed_at: string;
           };
+          const mType = record.meal_type || "lunch";
+          const cTime = record.consumed_at || new Date().toISOString();
+
           setClaimedAlert({
             id: record.id || Date.now().toString(),
             mealLogId: record.id,
-            mealType: record.meal_type || "lunch",
-            claimedAt: record.consumed_at || new Date().toISOString(),
+            mealType: mType,
+            claimedAt: cTime,
           });
           setFraudReportSuccess(false);
+
+          // Update consumed state instantly
+          setTodayConsumed((prev) => ({
+            ...prev,
+            [mType]: true,
+            consumedAt: {
+              ...prev.consumedAt,
+              [mType]: cTime,
+            },
+          }));
 
           // Audio/Haptic trigger
           if (typeof window !== "undefined" && "navigator" in window && navigator.vibrate) {
@@ -417,6 +445,9 @@ export default function StudentDashboardPage() {
               lunch: Boolean(bData.todayBooking.lunch),
               dinner: Boolean(bData.todayBooking.dinner),
             });
+          }
+          if (bData.todayConsumed) {
+            setTodayConsumed(bData.todayConsumed);
           }
         }
       } catch {
@@ -613,6 +644,7 @@ export default function StudentDashboardPage() {
   };
 
   const isCurrentShiftBooked = todayBookings[selectedShiftView];
+  const isCurrentShiftConsumed = todayConsumed[selectedShiftView];
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center px-3.5 sm:px-6 py-4 sm:py-8 font-sans selection:bg-emerald-500/30 selection:text-emerald-200">
@@ -789,10 +821,10 @@ export default function StudentDashboardPage() {
             <div className="flex items-center space-x-3 truncate">
               {/* Circular Avatar Thumbnail */}
               <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-slate-800 border-2 border-emerald-500/40 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-inner">
-                {profile?.profile_photo_url ? (
+                {profile?.profile_photo_url || profile?.avatar_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={profile.profile_photo_url}
+                    src={profile.profile_photo_url || profile.avatar_url || ""}
                     alt={profile.full_name || "Student"}
                     className="w-full h-full object-cover"
                   />
@@ -833,13 +865,13 @@ export default function StudentDashboardPage() {
               </div>
             </div>
 
-            {/* Verified Institutional Check */}
-            <div className="hidden sm:flex flex-col items-end flex-shrink-0">
-              <span className="inline-flex items-center space-x-1 text-[11px] text-emerald-400 font-medium font-bengali">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{isBengali ? "অনুমোদিত শিক্ষার্থী" : "Verified Student"}</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-bengali mt-0.5 truncate max-w-[140px]">
+            {/* Prominent Hall Serial Pill */}
+            <div className="flex flex-col items-end flex-shrink-0">
+              <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-emerald-500/10 border border-emerald-500/40 text-emerald-300 font-mono font-bold text-xs sm:text-sm shadow-[0_0_15px_rgba(16,185,129,0.25)]">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                <span>Hall Serial: {formatHallSerial(profile?.hall_serial, profile?.student_id)}</span>
+              </div>
+              <span className="hidden sm:inline-block text-[10px] text-slate-400 font-bengali mt-1 truncate max-w-[140px]">
                 {profile?.department || "CSE"}
               </span>
             </div>
@@ -1146,9 +1178,97 @@ export default function StudentDashboardPage() {
             </div>
           </div>
 
-          {/* Conditional Slot Render: Active Dynamic QR vs Informative Empty State */}
+          {/* Today's Meal Status Bar */}
+          <div className="rounded-xl px-3.5 py-2.5 bg-slate-900/80 backdrop-blur-xl border border-slate-800 flex items-center justify-between gap-2 shadow-sm">
+            <span className="text-xs text-slate-400 font-bengali">
+              {isBengali ? "আজকের মিল স্ট্যাটাস:" : "Today's Meal Status:"}
+            </span>
+
+            {isCurrentShiftConsumed ? (
+              <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-300 border border-rose-500/40 shadow-crimson-glow font-bengali">
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                <span>
+                  {isBengali ? "🔴 সংগৃহীত" : "🔴 Already Consumed"}
+                </span>
+                {todayConsumed.consumedAt[selectedShiftView] && (
+                  <span className="text-[10px] font-mono text-rose-300/80">
+                    ({new Intl.DateTimeFormat("en-US", {
+                      timeZone: "Asia/Dhaka",
+                      hour: "numeric",
+                      minute: "2-digit",
+                      hour12: true,
+                    }).format(new Date(todayConsumed.consumedAt[selectedShiftView]!))})
+                  </span>
+                )}
+              </span>
+            ) : isCurrentShiftBooked ? (
+              <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 shadow-emerald-glow font-bengali">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>{isBengali ? "🟢 বুক করা - গ্রহণের জন্য প্রস্তুত" : "🟢 Booked - Ready to Claim"}</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700 font-bengali">
+                <span className="w-2 h-2 rounded-full bg-slate-500" />
+                <span>{isBengali ? "⚪ মিল বরাদ্দ নেই" : "⚪ Not Booked for this Window"}</span>
+              </span>
+            )}
+          </div>
+
+          {/* Conditional Slot Render: Active Dynamic QR vs Consumed Overlay vs Informative Empty State */}
           <div className="w-full">
-            {isCurrentShiftBooked ? (
+            {isCurrentShiftConsumed ? (
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+                <div className="filter blur-[1px] opacity-40 pointer-events-none select-none">
+                  <DynamicQRCard
+                    profile={profile}
+                    activeShift={selectedShiftView}
+                    shiftLabel={
+                      selectedShiftView === "breakfast"
+                        ? isBengali ? "সকালের নাস্তা" : "Breakfast"
+                        : selectedShiftView === "lunch"
+                          ? isBengali ? "দুপুরের খাবার" : "Lunch"
+                          : isBengali ? "রাতের খাবার" : "Dinner"
+                    }
+                    shiftTime={
+                      selectedShiftView === "breakfast"
+                        ? isBengali ? "০৭:০০ - ০৯:৩০" : "07:00 - 09:30 AM"
+                        : selectedShiftView === "lunch"
+                          ? isBengali ? "১২:৩০ - ০৩:০০" : "12:30 - 03:00 PM"
+                          : isBengali ? "০৭:৩০ - ১০:০০" : "07:30 - 10:00 PM"
+                    }
+                    isBengali={isBengali}
+                    t={t}
+                    backupPin={profile?.dining_pin || "4829"}
+                  />
+                </div>
+                <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-3 border border-rose-500/40 rounded-2xl">
+                  <div className="w-14 h-14 rounded-2xl bg-rose-500/20 border border-rose-500/50 flex items-center justify-center text-rose-400 shadow-crimson-glow">
+                    <CheckCircle2 className="w-7 h-7" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-base sm:text-lg font-bold text-slate-100 font-bengali">
+                      {isBengali ? "আজকের মিল সংগৃহীত হয়েছে" : "Meal Already Claimed"}
+                    </h3>
+                    <p className="text-xs text-rose-300 font-mono">
+                      {isBengali ? "কাউন্টারে রেকর্ডকৃত সময়: " : "Recorded at: "}
+                      {todayConsumed.consumedAt[selectedShiftView]
+                        ? new Intl.DateTimeFormat("en-US", {
+                            timeZone: "Asia/Dhaka",
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          }).format(new Date(todayConsumed.consumedAt[selectedShiftView]!))
+                        : "Today"}
+                    </p>
+                  </div>
+                  <p className="text-[11px] text-slate-400 max-w-xs font-bengali">
+                    {isBengali
+                      ? "আপনি ইতিমধ্যে এই শিফটের মিল সংগ্রহ করেছেন। কোনো সন্দেহ থাকলে উপরের রিপোর্ট বাটনে ট্যাপ করুন।"
+                      : "You have already collected this meal shift. If this was not you, report proxy dining above."}
+                  </p>
+                </div>
+              </div>
+            ) : isCurrentShiftBooked ? (
               // Active Dynamic QR Container (Ready for Task 6)
               <DynamicQRCard
                 profile={profile}

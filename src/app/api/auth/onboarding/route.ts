@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { hashDiningPin, isValidDiningPin, isValidBupEmail, isValidEmail, normalizePhoneNumber, isPhoneRecentlyVerified } from "@/lib/auth-pin";
+import { hashDiningPin, isValidDiningPin, isValidEmail, normalizePhoneNumber, isPhoneRecentlyVerified } from "@/lib/auth-pin";
+import { isBUPEduEmail, extractStudentIdFromEmail } from "@/lib/auth-utils";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { HallType } from "@/types";
 
@@ -33,8 +34,16 @@ export async function POST(request: NextRequest) {
       pinHash,
     } = body;
 
-    // 1. Mandatory field checks
-    if (!studentId || typeof studentId !== "string" || !studentId.trim()) {
+    // 1. Mandatory field checks & Student ID extraction
+    let resolvedStudentId = studentId && typeof studentId === "string" ? studentId.trim() : "";
+    if (!resolvedStudentId && email) {
+      const extracted = extractStudentIdFromEmail(email);
+      if (extracted && /^\d+$/.test(extracted)) {
+        resolvedStudentId = extracted;
+      }
+    }
+
+    if (!resolvedStudentId) {
       return NextResponse.json(
         { success: false, error: "Student ID is required." },
         { status: 400 }
@@ -146,8 +155,7 @@ export async function POST(request: NextRequest) {
     const totpSecret = crypto.randomBytes(20).toString("hex");
 
     // 6. Automatic vs Manual Approval Logic:
-    // "the Hall authority will only manually verify who didnt login with edu mail, as not everyone has that"
-    // Users logging in with official @bup.edu.bd emails are automatically approved.
+    // Both @student.bup.edu.bd and @bup.edu.bd are recognized as authentic BUP institutional emails with instant auto-approval.
     // Users logging in with phone numbers or personal (non-edu) emails require manual Hall authority verification.
     const { authMethod } = body;
     let isApproved = false;
@@ -157,16 +165,16 @@ export async function POST(request: NextRequest) {
       isApproved = false;
     } else if (authenticatedEmail) {
       // User authenticated via Supabase email OTP -> must be an official BUP edu mail
-      isApproved = isValidBupEmail(authenticatedEmail) && isValidBupEmail(email);
+      isApproved = isBUPEduEmail(authenticatedEmail) && isBUPEduEmail(email);
     } else {
       // In offline / preview fallback mode, inspect the verified email
-      isApproved = isValidBupEmail(email);
+      isApproved = isBUPEduEmail(email);
     }
 
     // 7. Upsert profile into public.users
     const userPayload = {
       id: resolvedId,
-      student_id: studentId.trim(),
+      student_id: resolvedStudentId,
       full_name: fullName.trim(),
       email: email.trim().toLowerCase(),
       department: department.trim(),
@@ -197,6 +205,7 @@ export async function POST(request: NextRequest) {
         success: true,
         user: userPayload,
         isApproved,
+        verification_status: isApproved ? "verified" : "pending",
         isMock: true,
         message: isApproved
           ? "Profile registered and automatically approved via BUP institutional email."
@@ -208,6 +217,7 @@ export async function POST(request: NextRequest) {
       success: true,
       user: data || userPayload,
       isApproved,
+      verification_status: isApproved ? "verified" : "pending",
       message: isApproved
         ? "Student profile created and automatically approved via BUP institutional email."
         : "Student profile submitted successfully. Status is now pending manual verification by Hall authority.",

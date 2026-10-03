@@ -103,6 +103,35 @@ export async function GET(request: NextRequest) {
       .eq("booking_date", todayStr)
       .maybeSingle();
 
+    // Fetch today's consumed logs as well
+    const { data: todayLogs } = await supabaseAdmin
+      .from("meal_logs")
+      .select("id, meal_type, consumed_at, created_at")
+      .eq("user_id", userId)
+      .eq("consumed_date", todayStr);
+
+    const todayConsumed: {
+      breakfast: boolean;
+      lunch: boolean;
+      dinner: boolean;
+      consumedAt: { breakfast?: string; lunch?: string; dinner?: string };
+    } = {
+      breakfast: false,
+      lunch: false,
+      dinner: false,
+      consumedAt: {},
+    };
+
+    if (todayLogs && todayLogs.length > 0) {
+      for (const log of todayLogs) {
+        const type = log.meal_type as "breakfast" | "lunch" | "dinner";
+        if (type === "breakfast" || type === "lunch" || type === "dinner") {
+          todayConsumed[type] = true;
+          todayConsumed.consumedAt[type] = log.consumed_at || log.created_at;
+        }
+      }
+    }
+
     const isCutoffPassed = bst.hour >= 22; // 10:00 PM BST cutoff
 
     return NextResponse.json({
@@ -121,6 +150,7 @@ export async function GET(request: NextRequest) {
         lunch: false,
         dinner: false,
       },
+      todayConsumed,
       dates: {
         today: todayStr,
         tomorrow: tomorrowStr,

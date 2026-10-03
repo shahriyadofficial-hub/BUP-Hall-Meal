@@ -41,6 +41,7 @@ function formatDate(year: number, month: number, day: number) {
 export async function POST(request: NextRequest) {
   try {
     const body: CounterVerificationRequest & {
+      user_id?: string;
       student_id?: string;
       totp?: string;
       ts?: number;
@@ -49,13 +50,13 @@ export async function POST(request: NextRequest) {
     const { mode, meal_type, qr_payload, fallback_data } = body;
 
     let studentId = "";
-    let studentUid = "";
+    let studentUid = body.user_id || "";
 
     // 1. Extract identification based on mode
     if (mode === "pin") {
       studentId = fallback_data?.student_id || body.student_id || "";
     } else {
-      // mode === 'qr'
+      // mode === 'qr' or direct serial confirmation
       if (qr_payload) {
         try {
           // Attempt Base64 decode or direct JSON
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
           }
           const parsed = JSON.parse(decodedStr) as DynamicQRPayload;
           studentId = parsed.sid || "";
-          studentUid = parsed.uid || "";
+          studentUid = parsed.uid || studentUid;
         } catch {
           studentId = body.student_id || "";
         }

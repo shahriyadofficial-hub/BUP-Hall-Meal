@@ -58,9 +58,16 @@ export async function sendMealPushAlert(
     }
 
     const shift = getShiftLabel(mealType);
+    const mealTitleName = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+    const currentTimeStr = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Dhaka",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).format(new Date());
 
-    const title = "মিল নিশ্চিতকরণ / Meal Confirmation";
-    const body = `আপনার ${shift.bn} মিল সফলভাবে সংগ্রহ করা হয়েছে। অপরিচিত হলে রিপোর্ট করুন। / Your ${shift.en} meal has been collected. Report if not you.`;
+    const title = `🍛 ${mealTitleName} Claimed!`;
+    const body = `Your ${shift.en} was recorded at ${currentTimeStr}. If unauthorized, tap to report proxy dining.`;
 
     // 3. Construct Message Payload
     const message: Message = {

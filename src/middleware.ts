@@ -70,12 +70,14 @@ export async function middleware(request: NextRequest) {
   const isProtectedPath =
     pathname.startsWith("/student") ||
     pathname.startsWith("/staff") ||
+    pathname.startsWith("/counter") ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/manager");
 
   const isAuthPath =
     pathname === "/auth/login" ||
     pathname === "/auth/onboarding" ||
+    pathname === "/auth/profile-setup" ||
     pathname === "/auth/pending";
 
   // 4. Rule: Unauthenticated Users
@@ -94,18 +96,22 @@ export async function middleware(request: NextRequest) {
     .eq("id", user.id)
     .maybeSingle();
 
-  // 6. Rule: Onboarding Check (User in auth.users but has no profile row in public.users)
+  // 6. Rule: Profile Setup Check (User in auth.users but has not completed profile)
   if (!profile || !profile.student_id) {
-    // If not already on onboarding or api route, redirect to onboarding
-    if (pathname !== "/auth/onboarding" && !pathname.startsWith("/api") && !pathname.startsWith("/auth/logout")) {
-      return createRedirectResponse("/auth/onboarding", request, response);
+    if (
+      pathname !== "/auth/profile-setup" &&
+      pathname !== "/auth/onboarding" &&
+      !pathname.startsWith("/api") &&
+      !pathname.startsWith("/auth/logout") &&
+      !pathname.startsWith("/auth/callback")
+    ) {
+      return createRedirectResponse("/auth/profile-setup", request, response);
     }
     return response;
   }
 
   // 7. Rule: Approval Check (Profile exists but is_approved === false)
   if (profile.is_approved === false) {
-    // Allow access ONLY to /auth/pending, /auth/logout, and internal API routes
     if (pathname !== "/auth/pending" && !pathname.startsWith("/api") && !pathname.startsWith("/auth/logout")) {
       return createRedirectResponse("/auth/pending", request, response);
     }
@@ -116,29 +122,25 @@ export async function middleware(request: NextRequest) {
   const userRole: UserRole = (profile.role as UserRole) || "student";
   let defaultDashboard = "/student/dashboard";
   if (userRole === "admin") {
-    defaultDashboard = "/admin/approvals";
+    defaultDashboard = "/admin/users";
   } else if (userRole === "staff" || userRole === "manager") {
-    defaultDashboard = "/staff/scanner";
+    defaultDashboard = "/counter";
   }
 
   // 8. Rule: Auth Flow Loop Prevention
-  // If an authenticated & approved user navigates to login, onboarding, or pending, redirect to role home
   if (isAuthPath) {
     return createRedirectResponse(defaultDashboard, request, response);
   }
 
   // 9. Rule: Role-Based Route Boundaries
-
-  // /admin/*: Accessible strictly by role === 'admin'
   if (pathname.startsWith("/admin")) {
     if (userRole !== "admin") {
       return createRedirectResponse("/student/dashboard", request, response);
     }
   }
 
-  // /staff/*: Accessible only by role IN ('staff', 'admin')
-  if (pathname.startsWith("/staff")) {
-    if (userRole !== "staff" && userRole !== "admin") {
+  if (pathname.startsWith("/staff") || pathname.startsWith("/counter")) {
+    if (userRole !== "staff" && userRole !== "manager" && userRole !== "admin") {
       return createRedirectResponse("/student/dashboard", request, response);
     }
   }

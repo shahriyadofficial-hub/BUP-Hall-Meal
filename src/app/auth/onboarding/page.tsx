@@ -29,23 +29,9 @@ import { PassportPhotoUpload } from "@/components/PassportPhotoUpload";
 import { DiningPinInput } from "@/components/DiningPinInput";
 import { supabase } from "@/lib/supabase/client";
 import { HallType } from "@/types";
-import { isValidBangladeshiPhone, normalizePhoneNumber, isValidBupEmail, isValidEmail } from "@/lib/auth-pin";
-
-const POPULAR_DEPARTMENTS = [
-  "Information & Communication Technology (ICT)",
-  "Computer Science & Engineering (CSE)",
-  "Business Administration (BBA)",
-  "Economics",
-  "English",
-  "International Relations (IR)",
-  "Law",
-  "Public Administration",
-  "Environmental Science",
-  "Mass Communication & Journalism",
-  "Development Studies",
-  "Sociology",
-  "Disaster Management & Resilience",
-];
+import { isValidBangladeshiPhone, normalizePhoneNumber, isValidEmail } from "@/lib/auth-pin";
+import { isBUPEduEmail, extractStudentIdFromEmail } from "@/lib/auth-utils";
+import { BUP_FACULTIES, BUP_DEPARTMENTS_BY_FACULTY } from "@/constants/bup-departments";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -97,7 +83,7 @@ export default function StudentOnboardingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const isEdu = authMethod === "email" && isValidBupEmail(userEmail);
+  const isEdu = authMethod === "email" && isBUPEduEmail(userEmail);
 
   /**
    * Check Supabase authentication and pre-populate if session exists
@@ -117,7 +103,13 @@ export default function StudentOnboardingPage() {
             setAuthMethod("phone");
           }
 
-          if (storedEmail) setUserEmail(storedEmail);
+          if (storedEmail) {
+            setUserEmail(storedEmail);
+            const extracted = extractStudentIdFromEmail(storedEmail);
+            if (extracted && /^\d+$/.test(extracted)) {
+              setStudentId((prev) => prev || extracted);
+            }
+          }
           if (storedPhone) {
             setPhoneNumber(storedPhone);
             if (isPhoneAuthVerified) setIsPhoneVerified(true);
@@ -130,6 +122,10 @@ export default function StudentOnboardingPage() {
           if (session.user.email) {
             setUserEmail(session.user.email);
             setAuthMethod("email");
+            const extracted = extractStudentIdFromEmail(session.user.email);
+            if (extracted && /^\d+$/.test(extracted)) {
+              setStudentId((prev) => prev || extracted);
+            }
           }
           if (session.access_token) {
             setAccessToken(session.access_token);
@@ -535,7 +531,7 @@ export default function StudentOnboardingPage() {
                       {authMethod === "phone" ? (phoneNumber ? `Phone: ${phoneNumber}` : "Phone Login") : (userEmail || "Email Login")}
                     </span>
                   </div>
-                  <span className={`text-[11px] font-medium font-bengali px-2 py-0.5 rounded-full border ${
+                  <span className={`text-[11px] font-medium font-bengali px-2.5 py-0.5 rounded-full border ${
                     isEdu
                       ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
                       : "bg-amber-950/30 border-amber-500/30 text-amber-300"
@@ -543,19 +539,21 @@ export default function StudentOnboardingPage() {
                     {authMethod === "phone"
                       ? (isBengali ? "ফোন নম্বর (ম্যানুয়াল যাচাই)" : "Phone Login (Manual Verification)")
                       : isEdu 
-                      ? (isBengali ? "প্রাতিষ্ঠানিক ইমেইল (স্বয়ংক্রিয় অনুমোদন)" : "Official Edu Email (Auto-Approved)")
+                      ? (isBengali ? "✓ বিইউপি এডু ইমেইল (স্বয়ংক্রিয় যাচাইকৃত)" : "✓ BUP Edu-mail (Auto-Verified)")
                       : (isBengali ? "নন-এডু ইমেইল (ম্যানুয়াল যাচাই)" : "Non-Edu Email (Manual Verification)")}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 font-bengali leading-relaxed">
-                  {isEdu
-                    ? (isBengali
-                        ? "✓ বিইউপি প্রাতিষ্ঠানিক ইমেইল (@bup.edu.bd) দ্বারা লগইন করায় প্রোফাইলটি স্বয়ংক্রিয়ভাবে সরাসরি অনুমোদিত হবে।"
-                        : "✓ Official BUP email detected. Your account will be automatically verified upon submission.")
-                    : (isBengali
-                        ? "ℹ বিইউপি প্রাতিষ্ঠানিক ইমেইল ছাড়া (ফোন নম্বর বা ব্যক্তিগত ইমেইলে) লগইন করায়, হল কর্তৃপক্ষ ম্যানুয়ালি যাচাইয়ের পর মিল সুবিধা সক্রিয় হবে।"
-                        : "ℹ Non-edu or phone login. Hall administration will manually verify your identity before activation.")}
-                </p>
+                {!isEdu && (
+                  <p className="text-[11px] text-amber-300/80 font-bengali leading-relaxed">
+                    {authMethod === "phone"
+                      ? (isBengali
+                          ? "ℹ ফোন নম্বরে লগইন করায়, হল কর্তৃপক্ষ ম্যানুয়ালি যাচাইয়ের পর মিল সুবিধা সক্রিয় হবে।"
+                          : "ℹ Phone login requires manual Hall administration verification before activation.")
+                      : (isBengali
+                          ? "ℹ বিইউপি প্রাতিষ্ঠানিক ইমেইল ছাড়া (ফোন নম্বর বা ব্যক্তিগত ইমেইলে) লগইন করায়, হল কর্তৃপক্ষ ম্যানুয়ালি যাচাইয়ের পর মিল সুবিধা সক্রিয় হবে।"
+                          : "ℹ Non-edu or personal email. Hall administration will manually verify your identity before activation.")}
+                  </p>
+                )}
               </div>
 
               {/* Full Name */}
@@ -601,8 +599,15 @@ export default function StudentOnboardingPage() {
                     required
                     value={userEmail}
                     disabled={Boolean(accessToken && authMethod === "email")}
-                    onChange={(e) => setUserEmail(e.target.value)}
-                    placeholder={authMethod === "email" ? t.auth.emailPlaceholder : "yourname@gmail.com / student@bup.edu.bd"}
+                    onChange={(e) => {
+                      const newEmail = e.target.value;
+                      setUserEmail(newEmail);
+                      const extracted = extractStudentIdFromEmail(newEmail);
+                      if (extracted && /^\d+$/.test(extracted)) {
+                        setStudentId((prev) => (!prev || /^\d+$/.test(prev) ? extracted : prev));
+                      }
+                    }}
+                    placeholder={authMethod === "email" ? t.auth.emailPlaceholder : "yourname@gmail.com / student@student.bup.edu.bd"}
                     className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border text-slate-100 text-sm font-sans placeholder:text-slate-600 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
                       Boolean(accessToken && authMethod === "email") ? "opacity-75 cursor-not-allowed bg-slate-900" : ""
                     } ${
@@ -667,12 +672,24 @@ export default function StudentOnboardingPage() {
                     <option value="" disabled>
                       {t.auth.departmentPlaceholder}
                     </option>
-                    {POPULAR_DEPARTMENTS.map((dept) => (
-                      <option key={dept} value={dept} className="bg-slate-900 text-slate-100">
-                        {dept}
-                      </option>
+                    {BUP_FACULTIES.map((faculty) => (
+                      <optgroup
+                        key={faculty}
+                        label={faculty}
+                        className="bg-slate-900 font-semibold text-emerald-400"
+                      >
+                        {BUP_DEPARTMENTS_BY_FACULTY[faculty]?.map((dept) => (
+                          <option
+                            key={dept.code}
+                            value={dept.name}
+                            className="bg-slate-950 text-slate-100 font-normal pl-4"
+                          >
+                            {dept.name}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
-                    <option value="Other" className="bg-slate-900 text-slate-100">
+                    <option value="Other" className="bg-slate-900 text-slate-100 font-medium">
                       {isBengali ? "অন্যান্য (লিখুন)" : "Other (Specify)"}
                     </option>
                   </select>
