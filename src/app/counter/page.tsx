@@ -35,7 +35,9 @@ import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { playFeedback } from "@/lib/audio-feedback";
 import { formatHallSerial } from "@/lib/hall-serial";
 import { MealType } from "@/types";
-import { cn } from "@/lib/utils";
+import { cn, toBengaliDigits } from "@/lib/utils";
+import { useTranslation } from "@/context/LocaleContext";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 interface StudentLookupResult {
   id: string;
@@ -55,6 +57,8 @@ interface StudentLookupResult {
 }
 
 export default function CounterTerminalPage() {
+  const { isBengali, t } = useTranslation();
+
   // Active shift selection (auto-detects based on BST hour)
   const [activeShift, setActiveShift] = useState<MealType>(() => {
     const hour = new Date().getUTCHours() + 6; // Approx BST
@@ -446,15 +450,27 @@ export default function CounterTerminalPage() {
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <h1 className="text-base font-bold text-slate-100 tracking-tight">
-                BUP Dining Counter Terminal
+              <h1 className="text-base font-bold text-slate-100 tracking-tight font-bengali">
+                {isBengali ? "বিইউপি ডাইনিং কাউন্টার টার্মিনাল" : "BUP Dining Counter Terminal"}
               </h1>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                HIGH SPEED
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bengali">
+                {isBengali ? "উচ্চ গতি" : "HIGH SPEED"}
               </span>
             </div>
-            <p className="text-xs text-slate-400">
-              Session Recorded: <span className="font-mono text-emerald-400 font-bold">{sessionCount} meals</span>
+            <p className="text-xs text-slate-400 font-bengali">
+              {isBengali ? (
+                <>
+                  চলতি সেশনে রেকর্ডকৃত:{" "}
+                  <span className="font-mono text-emerald-400 font-bold">
+                    {toBengaliDigits(sessionCount)} টি মিল
+                  </span>
+                </>
+              ) : (
+                <>
+                  Session Recorded:{" "}
+                  <span className="font-mono text-emerald-400 font-bold">{sessionCount} meals</span>
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -474,7 +490,7 @@ export default function CounterTerminalPage() {
                     if (isSoundEnabled) playFeedback("click");
                   }}
                   className={cn(
-                    "px-2.5 py-1.5 rounded-lg text-xs font-medium capitalize transition-all flex items-center space-x-1.5",
+                    "px-2.5 py-1.5 rounded-lg text-xs font-medium capitalize transition-all flex items-center space-x-1.5 font-bengali",
                     isSel
                       ? "bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40 shadow-sm"
                       : "text-slate-400 hover:text-slate-200"
@@ -483,7 +499,19 @@ export default function CounterTerminalPage() {
                   {shift === "breakfast" && <Coffee className="w-3.5 h-3.5" />}
                   {shift === "lunch" && <Sun className="w-3.5 h-3.5" />}
                   {shift === "dinner" && <Moon className="w-3.5 h-3.5" />}
-                  <span className="hidden sm:inline">{shift}</span>
+                  <span className="hidden sm:inline">
+                    {shift === "breakfast"
+                      ? isBengali
+                        ? "সকাল"
+                        : "Breakfast"
+                      : shift === "lunch"
+                      ? isBengali
+                        ? "দুপুর"
+                        : "Lunch"
+                      : isBengali
+                      ? "রাত"
+                      : "Dinner"}
+                  </span>
                 </button>
               );
             })}
@@ -494,10 +522,13 @@ export default function CounterTerminalPage() {
             type="button"
             onClick={() => setIsSoundEnabled(!isSoundEnabled)}
             className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200"
-            title={isSoundEnabled ? "Mute sound" : "Enable sound"}
+            title={isSoundEnabled ? (isBengali ? "শব্দ বন্ধ করুন" : "Mute sound") : (isBengali ? "শব্দ চালু করুন" : "Enable sound")}
           >
             {isSoundEnabled ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4" />}
           </button>
+
+          {/* Language Toggle */}
+          <LanguageToggle />
         </div>
       </header>
 
@@ -534,7 +565,7 @@ export default function CounterTerminalPage() {
             )}
           >
             <Hash className="w-4 h-4" />
-            <span>Short Serial Keypad</span>
+            <span>{isBengali ? "সংক্ষিপ্ত সিরিয়াল কিপ্যাড" : "Short Serial Keypad"}</span>
           </button>
 
           <button
@@ -551,7 +582,7 @@ export default function CounterTerminalPage() {
             )}
           >
             <QrCode className="w-4 h-4" />
-            <span>Camera QR Scanner</span>
+            <span>{isBengali ? "ক্যামেরা কিউআর স্ক্যানার" : "Camera QR Scanner"}</span>
           </button>
         </div>
 
@@ -562,8 +593,8 @@ export default function CounterTerminalPage() {
             <form onSubmit={handleSerialSubmit} className="relative">
               <div className="rounded-3xl p-5 bg-slate-900/80 backdrop-blur-2xl border border-slate-800 shadow-2xl space-y-4">
                 <div className="flex items-center justify-between text-xs text-slate-400 font-medium px-1">
-                  <span>Enter 1 to 3 Digit Hall Serial:</span>
-                  <span className="font-mono text-emerald-400">e.g. 42 or 042</span>
+                  <span>{isBengali ? "১ থেকে ৩ অঙ্কের হল সিরিয়াল নম্বর দিন:" : "Enter 1 to 3 Digit Hall Serial:"}</span>
+                  <span className="font-mono text-emerald-400">{isBengali ? "যেমন: ৪২ বা ০৪২" : "e.g. 42 or 042"}</span>
                 </div>
 
                 <div className="relative flex items-center">
@@ -591,7 +622,7 @@ export default function CounterTerminalPage() {
                       <RotateCw className="w-4 h-4 animate-spin" />
                     ) : (
                       <>
-                        <span>Find</span>
+                        <span>{isBengali ? "খুঁজুন" : "Find"}</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
@@ -611,13 +642,21 @@ export default function CounterTerminalPage() {
             <div className="rounded-3xl p-4 bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 shadow-lg grid grid-cols-3 gap-2.5">
               {["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "GO"].map((key) => {
                 const isSpecial = key === "C" || key === "GO";
+                const displayKey = isBengali
+                  ? key === "GO"
+                    ? "যাচাই"
+                    : key === "C"
+                    ? "মুছুন"
+                    : toBengaliDigits(key)
+                  : key;
                 return (
                   <button
                     key={key}
                     type="button"
                     onClick={() => handleKeypadPress(key)}
                     className={cn(
-                      "py-4 rounded-2xl text-xl font-mono font-bold transition-all active:scale-95 shadow-sm",
+                      "py-4 rounded-2xl font-mono font-bold transition-all active:scale-95 shadow-sm",
+                      isSpecial ? "text-base tracking-wide" : "text-xl",
                       key === "GO"
                         ? "bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-glow"
                         : key === "C"
@@ -625,7 +664,7 @@ export default function CounterTerminalPage() {
                         : "bg-slate-800/70 hover:bg-slate-700/80 text-slate-100 border border-slate-700/50"
                     )}
                   >
-                    {key}
+                    {displayKey}
                   </button>
                 );
               })}
@@ -641,10 +680,12 @@ export default function CounterTerminalPage() {
               <div className="rounded-2xl p-4 bg-amber-950/80 border border-amber-500/50 text-amber-200 text-xs sm:text-sm space-y-2 shadow-amber-glow backdrop-blur-xl">
                 <div className="flex items-center space-x-2 font-bold text-amber-300">
                   <ShieldAlert className="w-5 h-5 flex-shrink-0" />
-                  <span>HTTPS Security Notice</span>
+                  <span>{isBengali ? "HTTPS নিরাপত্তা বিজ্ঞপ্তি" : "HTTPS Security Notice"}</span>
                 </div>
                 <p className="leading-relaxed">
-                  Camera requires a secure HTTPS connection or localhost. Please test via your Vercel deployment URL or configure HTTPS.
+                  {isBengali
+                    ? "ক্যামেরা ব্যবহারের জন্য সুরক্ষিত HTTPS সংযোগ প্রয়োজন। অনুগ্রহ করে ডেপ্লয়মেন্ট লিংকে অথবা HTTPS চালু করে চেষ্টা করুন।"
+                    : "Camera requires a secure HTTPS connection or localhost. Please test via your Vercel deployment URL or configure HTTPS."}
                 </p>
                 <div className="pt-1">
                   <button
@@ -652,7 +693,7 @@ export default function CounterTerminalPage() {
                     onClick={() => setActiveTab("serial")}
                     className="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-sm"
                   >
-                    Use Hall Serial Number Keypad Instead
+                    {isBengali ? "হল সিরিয়াল কিপ্যাড ব্যবহার করুন" : "Use Hall Serial Number Keypad Instead"}
                   </button>
                 </div>
               </div>
@@ -663,10 +704,12 @@ export default function CounterTerminalPage() {
               <div className="rounded-2xl p-4 bg-rose-950/80 border border-rose-500/50 text-rose-200 text-xs sm:text-sm space-y-2.5 shadow-crimson-glow backdrop-blur-xl">
                 <div className="flex items-center space-x-2 font-bold text-rose-300">
                   <Lock className="w-5 h-5 flex-shrink-0" />
-                  <span>Camera Permission Blocked</span>
+                  <span>{isBengali ? "ক্যামেরা ব্যবহারের অনুমতি ব্লক করা হয়েছে" : "Camera Permission Blocked"}</span>
                 </div>
                 <p className="leading-relaxed">
-                  Camera permission is blocked. Please tap the lock icon in your browser address bar and set Camera to &apos;Allow&apos;.
+                  {isBengali
+                    ? "ক্যামেরা ব্যবহারের অনুমতি দেওয়া হয়নি। ব্রাউজারের অ্যাড্রেস বারে তালার আইকনে ক্লিক করে ক্যামেরা 'Allow' করুন।"
+                    : "Camera permission is blocked. Please tap the lock icon in your browser address bar and set Camera to 'Allow'."}
                 </p>
                 <div className="flex items-center space-x-2 pt-1">
                   <button
@@ -675,14 +718,14 @@ export default function CounterTerminalPage() {
                     className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center space-x-1.5 transition-all shadow-sm"
                   >
                     <RotateCw className="w-3.5 h-3.5" />
-                    <span>Try Again</span>
+                    <span>{isBengali ? "আবার চেষ্টা করুন" : "Try Again"}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab("serial")}
                     className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 transition-all"
                   >
-                    Switch to Serial Keypad
+                    {isBengali ? "সিরিয়াল কিপ্যাডে যান" : "Switch to Serial Keypad"}
                   </button>
                 </div>
               </div>
@@ -693,10 +736,12 @@ export default function CounterTerminalPage() {
               <div className="rounded-2xl p-4 bg-slate-900 border border-slate-700 text-slate-300 text-xs sm:text-sm space-y-2">
                 <div className="flex items-center space-x-2 font-bold text-amber-300">
                   <CameraOff className="w-5 h-5 flex-shrink-0" />
-                  <span>No Camera Detected</span>
+                  <span>{isBengali ? "কোনো ক্যামেরা পাওয়া যায়নি" : "No Camera Detected"}</span>
                 </div>
                 <p className="leading-relaxed">
-                  No camera hardware detected on this device. Please use the quick Hall Serial input box below.
+                  {isBengali
+                    ? "এই ডিভাইসে কোনো ক্যামেরা সনাক্ত করা যায়নি। অনুগ্রহ করে দ্রুত হল সিরিয়াল বক্সটি ব্যবহার করুন।"
+                    : "No camera hardware detected on this device. Please use the quick Hall Serial input box below."}
                 </p>
               </div>
             )}
@@ -706,7 +751,7 @@ export default function CounterTerminalPage() {
               <div className="rounded-2xl p-4 bg-rose-950/70 border border-rose-500/40 text-rose-200 text-xs sm:text-sm space-y-2">
                 <div className="flex items-center space-x-2 font-bold text-rose-300">
                   <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                  <span>Camera Issue</span>
+                  <span>{isBengali ? "ক্যামেরা সমস্যা" : "Camera Issue"}</span>
                 </div>
                 <p className="leading-relaxed">{cameraErrorDetail}</p>
                 <div className="pt-1">
@@ -716,7 +761,7 @@ export default function CounterTerminalPage() {
                     className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 flex items-center space-x-1"
                   >
                     <RotateCw className="w-3.5 h-3.5" />
-                    <span>Retry Camera</span>
+                    <span>{isBengali ? "আবার ক্যামেরা চালু করুন" : "Retry Camera"}</span>
                   </button>
                 </div>
               </div>
@@ -729,22 +774,28 @@ export default function CounterTerminalPage() {
                 {cameraState === "running" ? (
                   <span className="flex items-center space-x-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                    <span className="font-semibold text-emerald-300">Camera Active: Auto-Scanning QR</span>
+                    <span className="font-semibold text-emerald-300">
+                      {isBengali ? "ক্যামেরা চালু: কিউআর স্ক্যান করা হচ্ছে" : "Camera Active: Auto-Scanning QR"}
+                    </span>
                   </span>
                 ) : cameraState === "requesting" ? (
                   <span className="flex items-center space-x-1.5 text-amber-300">
                     <RotateCw className="w-3 h-3 animate-spin" />
-                    <span>Requesting Permission...</span>
+                    <span>{isBengali ? "অনুমতি চাওয়া হচ্ছে..." : "Requesting Permission..."}</span>
                   </span>
                 ) : (
                   <span className="flex items-center space-x-1.5 text-slate-400">
                     <Camera className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Optical Scanner</span>
+                    <span>{isBengali ? "অপটিক্যাল স্ক্যানার" : "Optical Scanner"}</span>
                   </span>
                 )}
 
                 <div className="flex items-center space-x-2">
-                  <span className="font-mono text-emerald-400 uppercase text-[11px]">{activeShift} Shift</span>
+                  <span className="font-mono text-emerald-400 uppercase text-[11px]">
+                    {isBengali
+                      ? (activeShift === "breakfast" ? "সকালের শিফট" : activeShift === "lunch" ? "দুপুরের শিফট" : "রাতের শিফট")
+                      : `${activeShift} Shift`}
+                  </span>
                   {cameraState === "running" && (
                     <button
                       type="button"
@@ -752,7 +803,7 @@ export default function CounterTerminalPage() {
                       className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-rose-300 border border-slate-700 hover:border-rose-500/30 text-[11px] font-semibold flex items-center space-x-1 transition-all"
                     >
                       <Square className="w-2.5 h-2.5 fill-current" />
-                      <span>Stop</span>
+                      <span>{isBengali ? "বন্ধ" : "Stop"}</span>
                     </button>
                   )}
                 </div>
@@ -778,9 +829,11 @@ export default function CounterTerminalPage() {
                       <Camera className="w-8 h-8" />
                     </div>
                     <div className="space-y-1">
-                      <h3 className="text-sm font-bold text-slate-100">Camera Scanner Ready</h3>
+                      <h3 className="text-sm font-bold text-slate-100">
+                        {isBengali ? "ক্যামেরা স্ক্যানার প্রস্তুত" : "Camera Scanner Ready"}
+                      </h3>
                       <p className="text-xs text-slate-400 max-w-[220px]">
-                        Tap below to start scanner and trigger browser permission
+                        {isBengali ? "স্ক্যানার চালু করতে নিচে চাপুন" : "Tap below to start scanner and trigger browser permission"}
                       </p>
                     </div>
                     <button
@@ -789,7 +842,7 @@ export default function CounterTerminalPage() {
                       className="px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold text-sm shadow-emerald-glow transition-all flex items-center space-x-2"
                     >
                       <Camera className="w-4 h-4 font-bold" />
-                      <span>Start Camera Scanner</span>
+                      <span>{isBengali ? "ক্যামেরা স্ক্যানার চালু করুন" : "Start Camera Scanner"}</span>
                     </button>
                   </div>
                 )}
@@ -798,9 +851,9 @@ export default function CounterTerminalPage() {
                 {cameraState === "requesting" && (
                   <div className="flex flex-col items-center justify-center p-6 space-y-3 text-center z-10">
                     <RotateCw className="w-8 h-8 text-emerald-400 animate-spin" />
-                    <p className="text-sm font-bold text-slate-100">Requesting Permission...</p>
+                    <p className="text-sm font-bold text-slate-100">{isBengali ? "অনুমতি চাওয়া হচ্ছে..." : "Requesting Permission..."}</p>
                     <p className="text-xs text-slate-400 max-w-[200px]">
-                      Please tap &apos;Allow&apos; when prompted by your browser
+                      {isBengali ? "ব্রাউজারে প্রম্পট এলে 'Allow' চাপুন" : "Please tap 'Allow' when prompted by your browser"}
                     </p>
                   </div>
                 )}
@@ -809,14 +862,14 @@ export default function CounterTerminalPage() {
                 {(cameraState === "denied" || cameraState === "not_found" || cameraState === "error") && (
                   <div className="flex flex-col items-center justify-center p-6 space-y-3 text-center z-10">
                     <CameraOff className="w-10 h-10 text-rose-400/80" />
-                    <p className="text-xs font-semibold text-rose-300">Camera Offline</p>
+                    <p className="text-xs font-semibold text-rose-300">{isBengali ? "ক্যামেরা বন্ধ" : "Camera Offline"}</p>
                     <button
                       type="button"
                       onClick={startCamera}
                       className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 flex items-center space-x-1"
                     >
                       <RotateCw className="w-3 h-3" />
-                      <span>Retry</span>
+                      <span>{isBengali ? "পুনরায় চেষ্টা" : "Retry"}</span>
                     </button>
                   </div>
                 )}
@@ -826,7 +879,7 @@ export default function CounterTerminalPage() {
               {isSearching && (
                 <div className="flex items-center space-x-2 text-xs font-semibold text-emerald-300 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/30 animate-pulse">
                   <RotateCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>Looking up student dining profile...</span>
+                  <span>{isBengali ? "শিক্ষার্থীর মিল প্রোফাইল খোঁজা হচ্ছে..." : "Looking up student dining profile..."}</span>
                 </div>
               )}
 
@@ -844,9 +897,9 @@ export default function CounterTerminalPage() {
               <div className="flex items-center justify-between text-xs text-slate-400 px-1">
                 <div className="flex items-center space-x-1.5 font-semibold text-slate-200">
                   <Hash className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Fast Fallback: Enter Hall Serial Number</span>
+                  <span>{isBengali ? "দ্রুত সিরিয়াল এন্ট্রি: হল সিরিয়াল নম্বর দিন" : "Fast Fallback: Enter Hall Serial Number"}</span>
                 </div>
-                <span className="font-mono text-emerald-400 text-[11px]">1 to 3 digits</span>
+                <span className="font-mono text-emerald-400 text-[11px]">{isBengali ? "১ থেকে ৩ ডিজিট" : "1 to 3 digits"}</span>
               </div>
 
               <form onSubmit={handleSerialSubmit} className="flex items-center space-x-2">
@@ -875,7 +928,7 @@ export default function CounterTerminalPage() {
                     <RotateCw className="w-4 h-4 animate-spin" />
                   ) : (
                     <>
-                      <span>Find</span>
+                      <span>{isBengali ? "খুঁজুন" : "Find"}</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
@@ -883,14 +936,14 @@ export default function CounterTerminalPage() {
               </form>
 
               <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 pt-0.5">
-                <span>Type Serial # and hit Enter to claim</span>
+                <span>{isBengali ? "সিরিয়াল নং লিখে Enter চাপুন" : "Type Serial # and hit Enter to claim"}</span>
                 <button
                   type="button"
                   onClick={() => setActiveTab("serial")}
                   className="text-emerald-400 hover:underline font-semibold flex items-center space-x-1"
                 >
                   <Keyboard className="w-3 h-3" />
-                  <span>Open Full Keypad</span>
+                  <span>{isBengali ? "সম্পূর্ণ কিপ্যাড খুলুন" : "Open Full Keypad"}</span>
                 </button>
               </div>
             </div>
@@ -904,11 +957,11 @@ export default function CounterTerminalPage() {
               <div className="flex items-center space-x-2">
                 <Clock className="w-4 h-4 text-emerald-400" />
                 <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider">
-                  Today's Live Claim Log / আজকের বিতরণ লগ
+                  {isBengali ? "আজকের বিতরণ লগ" : "Today's Live Claim Log"}
                 </h3>
               </div>
               <span className="text-[11px] font-mono text-emerald-400 font-bold">
-                {recentClaims.length} served
+                {isBengali ? `${toBengaliDigits(recentClaims.length)} জনকে দেওয়া হয়েছে` : `${recentClaims.length} served`}
               </span>
             </div>
 
@@ -917,20 +970,24 @@ export default function CounterTerminalPage() {
                 <div key={claim.id} className="py-2.5 flex items-center justify-between text-xs">
                   <div className="flex items-center space-x-2.5">
                     <span className="px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono font-bold text-[11px]">
-                      #{claim.serial}
+                      #{isBengali ? toBengaliDigits(claim.serial) : claim.serial}
                     </span>
                     <div className="truncate">
                       <p className="font-semibold text-slate-200 truncate">{claim.name}</p>
                       <p className="text-[10px] text-slate-400 font-mono">
-                        ID: {claim.studentId} • Room {claim.room}
+                        {isBengali
+                          ? `আইডি: ${claim.studentId} • রুম: ${toBengaliDigits(claim.room)}`
+                          : `ID: ${claim.studentId} • Room ${claim.room}`}
                       </p>
                     </div>
                   </div>
 
                   <div className="text-right flex-shrink-0">
-                    <span className="text-[11px] font-mono text-slate-300 block">{claim.time}</span>
+                    <span className="text-[11px] font-mono text-slate-300 block">
+                      {isBengali ? toBengaliDigits(claim.time) : claim.time}
+                    </span>
                     <span className="text-[10px] font-bold text-emerald-400 uppercase">
-                      ✓ {claim.shift}
+                      ✓ {isBengali ? (claim.shift === "breakfast" ? "সকাল" : claim.shift === "lunch" ? "দুপুর" : "রাত") : claim.shift}
                     </span>
                   </div>
                 </div>
@@ -955,7 +1012,9 @@ export default function CounterTerminalPage() {
               <div className="p-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <h3 className="text-sm font-bold text-slate-100">Student Identity Verification</h3>
+                  <h3 className="text-sm font-bold text-slate-100">
+                    {isBengali ? "শিক্ষার্থী পরিচয় যাচাইকরণ" : "Student Identity Verification"}
+                  </h3>
                 </div>
                 <button
                   type="button"
@@ -984,7 +1043,7 @@ export default function CounterTerminalPage() {
                     <User className="w-14 h-14 text-emerald-400" />
                   )}
                   <span className="absolute bottom-1 right-1 px-2 py-0.5 rounded-full bg-slate-950/90 text-emerald-400 font-mono font-bold text-[10px] border border-emerald-500/30">
-                    #{selectedStudent.hall_serial}
+                    #{isBengali ? toBengaliDigits(selectedStudent.hall_serial) : selectedStudent.hall_serial}
                   </span>
                 </div>
 
@@ -992,7 +1051,11 @@ export default function CounterTerminalPage() {
                 <div className="space-y-1 w-full">
                   <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono font-bold text-xs">
                     <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Hall Serial: #{selectedStudent.hall_serial}</span>
+                    <span>
+                      {isBengali
+                        ? `হল সিরিয়াল: #${toBengaliDigits(selectedStudent.hall_serial)}`
+                        : `Hall Serial: #${selectedStudent.hall_serial}`}
+                    </span>
                   </div>
 
                   <h2 className="text-xl font-bold text-slate-100 pt-1">
@@ -1001,10 +1064,14 @@ export default function CounterTerminalPage() {
 
                   <div className="flex items-center justify-center space-x-3 text-xs text-slate-400 font-mono">
                     <span className="text-emerald-400 font-semibold">
-                      ID: {selectedStudent.student_id}
+                      {isBengali ? `আইডি: ${selectedStudent.student_id}` : `ID: ${selectedStudent.student_id}`}
                     </span>
                     <span>•</span>
-                    <span>Room: {selectedStudent.room_number}</span>
+                    <span>
+                      {isBengali
+                        ? `রুম: ${toBengaliDigits(selectedStudent.room_number)}`
+                        : `Room: ${selectedStudent.room_number}`}
+                    </span>
                   </div>
 
                   <p className="text-xs text-slate-400 truncate pt-0.5">
@@ -1018,7 +1085,7 @@ export default function CounterTerminalPage() {
                     <div className="p-3.5 rounded-2xl bg-emerald-950/80 border-2 border-emerald-500 text-emerald-200 flex items-center justify-center space-x-2.5 shadow-emerald-glow">
                       <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
                       <span className="text-sm font-bold uppercase tracking-wider">
-                        🟢 Booked — Ready to Claim
+                        {isBengali ? "🟢 বুক করা আছে — দেওয়ার জন্য প্রস্তুত" : "🟢 Booked — Ready to Claim"}
                       </span>
                     </div>
                   )}
@@ -1028,20 +1095,30 @@ export default function CounterTerminalPage() {
                       <div className="flex items-center space-x-2">
                         <XCircle className="w-5 h-5 text-rose-400" />
                         <span className="text-sm font-bold uppercase tracking-wider">
-                          🔴 Already Consumed
+                          {isBengali ? "🔴 ইতিমধ্যে খাবার গ্রহণ করেছে" : "🔴 Already Consumed"}
                         </span>
                       </div>
                       <p className="text-xs font-mono text-rose-300/80">
-                        Recorded at:{" "}
+                        {isBengali ? "সংগ্রহের সময়: " : "Recorded at: "}
                         {selectedStudent.consumed_at
-                          ? new Intl.DateTimeFormat("en-US", {
-                              timeZone: "Asia/Dhaka",
-                              hour: "numeric",
-                              minute: "2-digit",
-                              second: "2-digit",
-                              hour12: true,
-                            }).format(new Date(selectedStudent.consumed_at))
-                          : "Earlier today"}
+                          ? (isBengali
+                              ? toBengaliDigits(
+                                  new Intl.DateTimeFormat("en-US", {
+                                    timeZone: "Asia/Dhaka",
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                    second: "2-digit",
+                                    hour12: true,
+                                  }).format(new Date(selectedStudent.consumed_at))
+                                )
+                              : new Intl.DateTimeFormat("en-US", {
+                                  timeZone: "Asia/Dhaka",
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  second: "2-digit",
+                                  hour12: true,
+                                }).format(new Date(selectedStudent.consumed_at)))
+                          : (isBengali ? "পূর্বে গ্রহণ করেছে" : "Earlier today")}
                       </p>
                     </div>
                   )}
@@ -1050,7 +1127,7 @@ export default function CounterTerminalPage() {
                     <div className="p-3.5 rounded-2xl bg-slate-800/90 border border-slate-700 text-slate-300 flex items-center justify-center space-x-2">
                       <AlertCircle className="w-5 h-5 text-amber-400" />
                       <span className="text-sm font-bold">
-                        ⚪ Not Booked for this Window
+                        {isBengali ? "⚪ এই শিফটের জন্য মিল বুক করা নেই" : "⚪ Not Booked for this Window"}
                       </span>
                     </div>
                   )}
@@ -1074,14 +1151,14 @@ export default function CounterTerminalPage() {
                     ) : (
                       <>
                         <CheckCircle2 className="w-5 h-5 font-bold" />
-                        <span>Confirm Meal (Press Space)</span>
+                        <span>{isBengali ? "মিল নিশ্চিত করুন (Space চাপুন)" : "Confirm Meal (Press Space)"}</span>
                       </>
                     )}
                   </button>
 
                   <div className="flex items-center justify-between text-[11px] text-slate-400 px-2 pt-1">
-                    <span>Press Spacebar to Confirm</span>
-                    <span>Press Esc to Cancel</span>
+                    <span>{isBengali ? "নিশ্চিত করতে Spacebar চাপুন" : "Press Spacebar to Confirm"}</span>
+                    <span>{isBengali ? "বাতিল করতে Esc চাপুন" : "Press Esc to Cancel"}</span>
                   </div>
                 </div>
               </div>

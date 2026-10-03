@@ -206,13 +206,15 @@ export default function MessManagerKitchenPage() {
             </div>
             <div>
               <h1 className="text-sm sm:text-base font-bold text-white tracking-tight font-bengali flex items-center space-x-1.5">
-                <span>মেস ম্যানেজার কিচেন ড্যাশবোর্ড</span>
+                <span>{isBengali ? "মেস ম্যানেজার কিচেন ড্যাশবোর্ড" : "Mess Manager Kitchen Dashboard"}</span>
                 <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  MESS MANAGER
+                  {isBengali ? "মেস ম্যানেজার" : "MESS MANAGER"}
                 </span>
               </h1>
               <p className="text-[11px] text-slate-400 font-sans">
-                BUP Hall Dining System • Cook&apos;s Preparation Slip &amp; Demand
+                {isBengali
+                  ? "বিইউপি হল ডাইনিং সিস্টেম • বাবুর্চির রান্নার প্রস্তুতি স্লিপ ও চাহিদা"
+                  : "BUP Hall Dining System • Cook's Preparation Slip & Demand"}
               </p>
             </div>
           </div>
@@ -224,7 +226,7 @@ export default function MessManagerKitchenPage() {
             type="button"
             onClick={() => fetchKitchenData(selectedDateMode)}
             className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
-            title="Refresh"
+            title={isBengali ? "তথ্য রিফ্রেশ করুন" : "Refresh"}
           >
             <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin text-emerald-400")} />
           </button>
@@ -255,7 +257,7 @@ export default function MessManagerKitchenPage() {
                 )}
               >
                 <Calendar className="w-4 h-4" />
-                <span>আগামীকাল (Tomorrow)</span>
+                <span>{isBengali ? "আগামীকাল" : "Tomorrow"}</span>
               </button>
 
               <button
@@ -269,7 +271,7 @@ export default function MessManagerKitchenPage() {
                 )}
               >
                 <Clock className="w-4 h-4" />
-                <span>আজকের দিন (Today)</span>
+                <span>{isBengali ? "আজকের দিন" : "Today"}</span>
               </button>
             </div>
 
@@ -286,13 +288,13 @@ export default function MessManagerKitchenPage() {
                 {cutoff?.isLocked ? (
                   <>
                     <Lock className="w-4 h-4 text-rose-400 flex-shrink-0" />
-                    <span>রাত ১০:০০ বুকিং লকড (Locked)</span>
+                    <span>{isBengali ? "রাত ১০:০০ বুকিং উইন্ডো বন্ধ" : "10:00 PM Booking Locked"}</span>
                   </>
                 ) : (
                   <>
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping flex-shrink-0" />
                     <Unlock className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                    <span>রাত ১০:০০ বুকিং উইন্ডো উন্মুক্ত (Open)</span>
+                    <span>{isBengali ? "রাত ১০:০০ বুকিং উইন্ডো উন্মুক্ত" : "10:00 PM Booking Open"}</span>
                   </>
                 )}
               </div>
@@ -309,7 +311,7 @@ export default function MessManagerKitchenPage() {
                       : "text-slate-400 hover:text-white"
                   )}
                 >
-                  কিচেন স্লিপ (Slip)
+                  {isBengali ? "কিচেন স্লিপ" : "Kitchen Slip"}
                 </button>
                 <button
                   type="button"
@@ -321,7 +323,7 @@ export default function MessManagerKitchenPage() {
                       : "text-slate-400 hover:text-white"
                   )}
                 >
-                  মাসিক গণনা (Monthly)
+                  {isBengali ? "মাসিক গণনা" : "Monthly Count"}
                 </button>
               </div>
             </div>
@@ -331,7 +333,8 @@ export default function MessManagerKitchenPage() {
           <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
             <div className="text-xs text-slate-400 font-mono flex items-center space-x-2">
               <span className="text-slate-300 font-bold">
-                নির্ধারিত তারিখ: {dates?.targetDate || "..."}
+                {isBengali ? "নির্ধারিত তারিখ: " : "Target Date: "}
+                {isBengali ? toBengaliDigits(dates?.targetDate || "...") : dates?.targetDate || "..."}
               </span>
               <span>•</span>
               <span>{dates?.bstTime || "Asia/Dhaka"}</span>
@@ -344,7 +347,7 @@ export default function MessManagerKitchenPage() {
                 className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold text-xs font-bengali shadow-md transition-all flex items-center space-x-2 active:scale-95"
               >
                 <Printer className="w-4 h-4 text-emerald-400" />
-                <span>🖨️ প্রিন্ট স্লিপ (Print Kitchen Slip)</span>
+                <span>{isBengali ? "🖨️ প্রিন্ট স্লিপ" : "🖨️ Print Kitchen Slip"}</span>
               </button>
 
               <button
@@ -353,7 +356,7 @@ export default function MessManagerKitchenPage() {
                 className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs font-bengali shadow-emerald-glow transition-all flex items-center space-x-2 active:scale-95"
               >
                 <FileSpreadsheet className="w-4 h-4 text-slate-950" />
-                <span>📥 এক্সেল এক্সপোর্ট (Export CSV)</span>
+                <span>{isBengali ? "📥 এক্সেল এক্সপোর্ট" : "📥 Export CSV"}</span>
               </button>
             </div>
           </div>
@@ -365,17 +368,17 @@ export default function MessManagerKitchenPage() {
         <div className="hidden print:block text-black p-4 border-b-2 border-black space-y-2 mb-4">
           <div className="text-center space-y-1">
             <h1 className="text-2xl font-black uppercase tracking-wider">
-              বাংলাদেশ ইউনিভার্সিটি অব প্রফেশনালস (বিইউপি)
+              {isBengali ? "বাংলাদেশ ইউনিভার্সিটি অব প্রফেশনালস (বিইউপি)" : "Bangladesh University of Professionals (BUP)"}
             </h1>
             <h2 className="text-lg font-bold">
-              হল ডাইনিং কিচেন কুকিং স্লিপ (Kitchen Production Demand)
+              {isBengali ? "হল ডাইনিং কিচেন কুকিং স্লিপ" : "Hall Dining Kitchen Production Demand Slip"}
             </h2>
             <div className="flex items-center justify-center space-x-4 text-sm font-semibold pt-1">
-              <span>রান্নার তারিখ: <strong>{dates?.targetDate}</strong></span>
+              <span>{isBengali ? "রান্নার তারিখ: " : "Cooking Date: "}<strong>{isBengali ? toBengaliDigits(dates?.targetDate || "") : dates?.targetDate}</strong></span>
               <span>•</span>
-              <span>মুদ্রণ সময়: {new Date().toLocaleString("en-GB", { timeZone: "Asia/Dhaka" })} (BST)</span>
+              <span>{isBengali ? "মুদ্রণ সময়: " : "Print Time: "}{new Date().toLocaleString(isBengali ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })} (BST)</span>
               <span>•</span>
-              <span>স্ট্যাটাস: {cutoff?.isLocked ? "চূড়ান্ত অর্ডার (Locked)" : "প্রাথমিক অর্ডার (Open)"}</span>
+              <span>{isBengali ? "স্ট্যাটাস: " : "Status: "}{cutoff?.isLocked ? (isBengali ? "চূড়ান্ত অর্ডার (বন্ধ)" : "Final Order (Locked)") : (isBengali ? "চলমান অর্ডার (উন্মুক্ত)" : "Live Order (Open)")}</span>
             </div>
           </div>
         </div>
@@ -389,16 +392,22 @@ export default function MessManagerKitchenPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg sm:text-xl font-extrabold text-white font-bengali flex items-center space-x-2 print:text-black">
-                  <span>পরবর্তী দিনের মোট মিলের চাহিদা (The Cook&apos;s Slip)</span>
+                  <span>{isBengali ? "পরবর্তী দিনের মোট মিলের চাহিদা" : "Next-Day Total Meal Requirements (The Cook's Slip)"}</span>
                 </h2>
                 <p className="text-xs text-slate-400 font-sans print:text-black">
-                  Calculated from confirmed student meal bookings for {dates?.targetDate}
+                  {isBengali
+                    ? `${toBengaliDigits(dates?.targetDate || "")} তারিখের নিশ্চিতকৃত মিল বুকিং থেকে হিসাবকৃত`
+                    : `Calculated from confirmed student meal bookings for ${dates?.targetDate}`}
                 </p>
               </div>
 
               {/* Total Plates Badge */}
               <div className="px-4 py-1.5 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-mono font-bold text-xs sm:text-sm print:border-black print:text-black">
-                TOTAL: <span className="text-base sm:text-lg font-black text-white print:text-black">{cookSlip?.totalMeals || 0}</span> PLATES
+                {isBengali ? "মোট: " : "TOTAL: "}
+                <span className="text-base sm:text-lg font-black text-white print:text-black">
+                  {isBengali ? toBengaliDigits(cookSlip?.totalMeals || 0) : cookSlip?.totalMeals || 0}
+                </span>{" "}
+                {isBengali ? "প্লেট" : "PLATES"}
               </div>
             </div>
 
@@ -412,23 +421,27 @@ export default function MessManagerKitchenPage() {
                     <div className="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center font-bold">
                       <Coffee className="w-4 h-4" />
                     </div>
-                    <span className="text-sm font-bold font-bengali">🍳 সকাল (Breakfast)</span>
+                    <span className="text-sm font-bold font-bengali">{isBengali ? "🍳 সকালের নাস্তা" : "🍳 Breakfast"}</span>
                   </div>
-                  <span className="text-[10px] font-mono text-slate-400 print:text-black">07:00 – 10:30 AM</span>
+                  <span className="text-[10px] font-mono text-slate-400 print:text-black">
+                    {isBengali ? "সকাল ০৭:০০ – ১০:৩০" : "07:00 – 10:30 AM"}
+                  </span>
                 </div>
 
                 <div className="py-4 text-center sm:text-left">
                   <div className="text-4xl sm:text-5xl font-black text-white font-mono tracking-tight print:text-black">
-                    {cookSlip?.breakfast || 0}
+                    {isBengali ? toBengaliDigits(cookSlip?.breakfast || 0) : cookSlip?.breakfast || 0}
                   </div>
                   <div className="text-xs text-slate-400 font-bengali pt-1 print:text-black">
-                    জন শিক্ষার্থীর নাস্তা অর্ডার
+                    {isBengali ? "জন শিক্ষার্থীর নাস্তা অর্ডার" : "student breakfast orders"}
                   </div>
                 </div>
 
                 {/* Subtext: Difference compared to today's consumption */}
                 <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs print:border-black">
-                  <span className="text-slate-400 print:text-black font-bengali">আজকের তুলনায়:</span>
+                  <span className="text-slate-400 print:text-black font-bengali">
+                    {isBengali ? "আজকের তুলনায়:" : "vs today:"}
+                  </span>
                   <div
                     className={cn(
                       "font-mono font-bold flex items-center space-x-1",
@@ -443,7 +456,9 @@ export default function MessManagerKitchenPage() {
                     )}
                     <span>
                       {(cookSlip?.diff.breakfast || 0) >= 0 ? "+" : ""}
-                      {cookSlip?.diff.breakfast || 0} vs today
+                      {isBengali
+                        ? `${toBengaliDigits(cookSlip?.diff.breakfast || 0)} আজকের চেয়ে`
+                        : `${cookSlip?.diff.breakfast || 0} vs today`}
                     </span>
                   </div>
                 </div>
@@ -456,23 +471,27 @@ export default function MessManagerKitchenPage() {
                     <div className="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center font-bold">
                       <Sun className="w-4 h-4" />
                     </div>
-                    <span className="text-sm font-bold font-bengali">🍛 দুপুর (Lunch)</span>
+                    <span className="text-sm font-bold font-bengali">{isBengali ? "🍛 দুপুরের খাবার" : "🍛 Lunch"}</span>
                   </div>
-                  <span className="text-[10px] font-mono text-slate-400 print:text-black">11:30 AM – 03:30 PM</span>
+                  <span className="text-[10px] font-mono text-slate-400 print:text-black">
+                    {isBengali ? "দুপুর ১১:৩০ – ০৩:৩০" : "11:30 AM – 03:30 PM"}
+                  </span>
                 </div>
 
                 <div className="py-4 text-center sm:text-left">
                   <div className="text-4xl sm:text-5xl font-black text-white font-mono tracking-tight print:text-black">
-                    {cookSlip?.lunch || 0}
+                    {isBengali ? toBengaliDigits(cookSlip?.lunch || 0) : cookSlip?.lunch || 0}
                   </div>
                   <div className="text-xs text-slate-400 font-bengali pt-1 print:text-black">
-                    জন শিক্ষার্থীর দুপুরের মিল অর্ডার
+                    {isBengali ? "জন শিক্ষার্থীর দুপুরের মিল অর্ডার" : "student lunch orders"}
                   </div>
                 </div>
 
                 {/* Subtext: Difference compared to today's consumption */}
                 <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs print:border-black">
-                  <span className="text-slate-400 print:text-black font-bengali">আজকের তুলনায়:</span>
+                  <span className="text-slate-400 print:text-black font-bengali">
+                    {isBengali ? "আজকের তুলনায়:" : "vs today:"}
+                  </span>
                   <div
                     className={cn(
                       "font-mono font-bold flex items-center space-x-1",
@@ -487,7 +506,9 @@ export default function MessManagerKitchenPage() {
                     )}
                     <span>
                       {(cookSlip?.diff.lunch || 0) >= 0 ? "+" : ""}
-                      {cookSlip?.diff.lunch || 0} vs today
+                      {isBengali
+                        ? `${toBengaliDigits(cookSlip?.diff.lunch || 0)} আজকের চেয়ে`
+                        : `${cookSlip?.diff.lunch || 0} vs today`}
                     </span>
                   </div>
                 </div>
@@ -500,23 +521,27 @@ export default function MessManagerKitchenPage() {
                     <div className="w-8 h-8 rounded-xl bg-indigo-500/20 flex items-center justify-center font-bold">
                       <Moon className="w-4 h-4" />
                     </div>
-                    <span className="text-sm font-bold font-bengali">🍲 রাত (Dinner)</span>
+                    <span className="text-sm font-bold font-bengali">{isBengali ? "🍲 রাতের খাবার" : "🍲 Dinner"}</span>
                   </div>
-                  <span className="text-[10px] font-mono text-slate-400 print:text-black">06:30 – 10:30 PM</span>
+                  <span className="text-[10px] font-mono text-slate-400 print:text-black">
+                    {isBengali ? "সন্ধ্যা ০৬:৩০ – ১০:৩০" : "06:30 – 10:30 PM"}
+                  </span>
                 </div>
 
                 <div className="py-4 text-center sm:text-left">
                   <div className="text-4xl sm:text-5xl font-black text-white font-mono tracking-tight print:text-black">
-                    {cookSlip?.dinner || 0}
+                    {isBengali ? toBengaliDigits(cookSlip?.dinner || 0) : cookSlip?.dinner || 0}
                   </div>
                   <div className="text-xs text-slate-400 font-bengali pt-1 print:text-black">
-                    জন শিক্ষার্থীর রাতের মিল অর্ডার
+                    {isBengali ? "জন শিক্ষার্থীর রাতের মিল অর্ডার" : "student dinner orders"}
                   </div>
                 </div>
 
                 {/* Subtext: Difference compared to today's consumption */}
                 <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs print:border-black">
-                  <span className="text-slate-400 print:text-black font-bengali">আজকের তুলনায়:</span>
+                  <span className="text-slate-400 print:text-black font-bengali">
+                    {isBengali ? "আজকের তুলনায়:" : "vs today:"}
+                  </span>
                   <div
                     className={cn(
                       "font-mono font-bold flex items-center space-x-1",
@@ -531,7 +556,9 @@ export default function MessManagerKitchenPage() {
                     )}
                     <span>
                       {(cookSlip?.diff.dinner || 0) >= 0 ? "+" : ""}
-                      {cookSlip?.diff.dinner || 0} vs today
+                      {isBengali
+                        ? `${toBengaliDigits(cookSlip?.diff.dinner || 0)} আজকের চেয়ে`
+                        : `${cookSlip?.diff.dinner || 0} vs today`}
                     </span>
                   </div>
                 </div>
@@ -552,10 +579,12 @@ export default function MessManagerKitchenPage() {
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-white font-bengali print:text-black">
-                      ফ্লোর ও উইং ভিত্তিক চাহিদার বিভাজন (Breakdown by Wing / Floor)
+                      {isBengali ? "ফ্লোর ও উইং ভিত্তিক চাহিদার বিভাজন" : "Breakdown by Wing / Floor"}
                     </h3>
                     <p className="text-xs text-slate-400 font-sans print:text-black">
-                      Dining orders categorized by student room floors
+                      {isBengali
+                        ? "শিক্ষার্থীদের রুমের ফ্লোর অনুযায়ী মিলের বিভাজন"
+                        : "Dining orders categorized by student room floors"}
                     </p>
                   </div>
                 </div>
@@ -571,11 +600,11 @@ export default function MessManagerKitchenPage() {
                   <table className="w-full text-left text-xs sm:text-sm font-sans border-collapse">
                     <thead>
                       <tr className="bg-slate-950/70 border-b border-slate-800 text-slate-400 font-mono text-[11px] uppercase tracking-wider print:bg-gray-100 print:text-black print:border-black">
-                        <th className="py-3 px-4 font-bold">ফ্লোর নম্বর (Floor)</th>
-                        <th className="py-3 px-4 font-bold text-amber-400 print:text-black">🍳 সকাল (Breakfast)</th>
-                        <th className="py-3 px-4 font-bold text-emerald-400 print:text-black">🍛 দুপুর (Lunch)</th>
-                        <th className="py-3 px-4 font-bold text-indigo-400 print:text-black">🍲 রাত (Dinner)</th>
-                        <th className="py-3 px-4 font-bold text-right text-white print:text-black">মোট প্লেট (Total)</th>
+                        <th className="py-3 px-4 font-bold">{isBengali ? "ফ্লোর নম্বর" : "Floor"}</th>
+                        <th className="py-3 px-4 font-bold text-amber-400 print:text-black">{isBengali ? "🍳 সকাল" : "🍳 Breakfast"}</th>
+                        <th className="py-3 px-4 font-bold text-emerald-400 print:text-black">{isBengali ? "🍛 দুপুর" : "🍛 Lunch"}</th>
+                        <th className="py-3 px-4 font-bold text-indigo-400 print:text-black">{isBengali ? "🍲 রাত" : "🍲 Dinner"}</th>
+                        <th className="py-3 px-4 font-bold text-right text-white print:text-black">{isBengali ? "মোট প্লেট" : "Total"}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/80 font-mono print:divide-black">
@@ -586,30 +615,42 @@ export default function MessManagerKitchenPage() {
                         >
                           <td className="py-3 px-4 font-bold text-slate-200 flex items-center space-x-2 print:text-black">
                             <Building className="w-4 h-4 text-emerald-400 print:text-black" />
-                            <span>{item.floor} ({toBengaliDigits(item.floorNumber)}ম তলা)</span>
+                            <span>
+                              {isBengali
+                                ? `${item.floor} (${toBengaliDigits(item.floorNumber)}ম তলা)`
+                                : `${item.floor} (Floor ${item.floorNumber})`}
+                            </span>
                           </td>
                           <td className="py-3 px-4 text-amber-300 font-bold print:text-black">
-                            {item.breakfast}
+                            {isBengali ? toBengaliDigits(item.breakfast) : item.breakfast}
                           </td>
                           <td className="py-3 px-4 text-emerald-300 font-bold print:text-black">
-                            {item.lunch}
+                            {isBengali ? toBengaliDigits(item.lunch) : item.lunch}
                           </td>
                           <td className="py-3 px-4 text-indigo-300 font-bold print:text-black">
-                            {item.dinner}
+                            {isBengali ? toBengaliDigits(item.dinner) : item.dinner}
                           </td>
                           <td className="py-3 px-4 text-right font-black text-white print:text-black">
-                            {item.total}
+                            {isBengali ? toBengaliDigits(item.total) : item.total}
                           </td>
                         </tr>
                       ))}
 
                       {/* Summary Row */}
                       <tr className="bg-slate-950/90 font-black border-t-2 border-slate-700 text-slate-100 print:bg-gray-200 print:text-black print:border-black">
-                        <td className="py-3 px-4 font-bengali">সর্বমোট (Grand Total)</td>
-                        <td className="py-3 px-4 text-amber-400 print:text-black">{cookSlip?.breakfast || 0}</td>
-                        <td className="py-3 px-4 text-emerald-400 print:text-black">{cookSlip?.lunch || 0}</td>
-                        <td className="py-3 px-4 text-indigo-400 print:text-black">{cookSlip?.dinner || 0}</td>
-                        <td className="py-3 px-4 text-right text-emerald-400 print:text-black">{cookSlip?.totalMeals || 0}</td>
+                        <td className="py-3 px-4 font-bengali">{isBengali ? "সর্বমোট" : "Grand Total"}</td>
+                        <td className="py-3 px-4 text-amber-400 print:text-black">
+                          {isBengali ? toBengaliDigits(cookSlip?.breakfast || 0) : cookSlip?.breakfast || 0}
+                        </td>
+                        <td className="py-3 px-4 text-emerald-400 print:text-black">
+                          {isBengali ? toBengaliDigits(cookSlip?.lunch || 0) : cookSlip?.lunch || 0}
+                        </td>
+                        <td className="py-3 px-4 text-indigo-400 print:text-black">
+                          {isBengali ? toBengaliDigits(cookSlip?.dinner || 0) : cookSlip?.dinner || 0}
+                        </td>
+                        <td className="py-3 px-4 text-right text-emerald-400 print:text-black">
+                          {isBengali ? toBengaliDigits(cookSlip?.totalMeals || 0) : cookSlip?.totalMeals || 0}
+                        </td>
                       </tr>
                     </tbody>
                   </table>
@@ -627,30 +668,36 @@ export default function MessManagerKitchenPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-800">
               <div>
                 <h2 className="text-lg sm:text-xl font-extrabold text-white font-bengali flex items-center space-x-2">
-                  <span>মাসিক মিল গণনা (Monthly Physical Consumption Tally)</span>
+                  <span>{isBengali ? "মাসিক মিল গণনা" : "Monthly Physical Consumption Tally"}</span>
                 </h2>
                 <p className="text-xs text-slate-400 font-sans">
-                  Current calendar month aggregated verification logs ({monthly?.monthNameEn})
+                  {isBengali
+                    ? `চলতি ক্যালেন্ডার মাসের মোট যাচাইকৃত খতিয়ান (${monthly?.monthNameBn})`
+                    : `Current calendar month aggregated verification logs (${monthly?.monthNameEn})`}
                 </p>
               </div>
 
               {/* Zero Financials MVP Constraint Banner */}
               <div className="px-3 py-1.5 rounded-xl bg-slate-950 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-bold flex items-center space-x-1.5">
                 <ShieldCheck className="w-4 h-4" />
-                <span>Zero Financials MVP: Physical Meal Quantities Only</span>
+                <span>
+                  {isBengali ? "জিরো ফিন্যান্সিয়াল MVP: শুধুমাত্র মিলের সংখ্যা" : "Zero Financials MVP: Physical Meal Quantities Only"}
+                </span>
               </div>
             </div>
 
             {/* Total Month Metric Banner */}
             <div className="p-6 rounded-2xl bg-gradient-to-r from-emerald-950/70 via-slate-900 to-teal-950/70 border border-emerald-500/40 text-center space-y-1">
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-300">
-                চলতি মাসে মোট সংগৃহীত খাবার (Total Verified Meals Consumed)
+                {isBengali ? "চলতি মাসে মোট সংগৃহীত খাবার" : "Total Verified Meals Consumed"}
               </span>
               <div className="text-5xl font-black text-white font-mono tracking-tight">
-                {monthly?.totalConsumed || 0}
+                {isBengali ? toBengaliDigits(monthly?.totalConsumed || 0) : monthly?.totalConsumed || 0}
               </div>
               <div className="text-xs text-slate-400 font-bengali">
-                {monthly?.monthNameBn} মাসে হলে পরিবেশিত মোট মিলের সংখ্যা
+                {isBengali
+                  ? `${monthly?.monthNameBn} মাসে হলে পরিবেশিত মোট মিলের সংখ্যা`
+                  : `Total meals served in the hall during ${monthly?.monthNameEn}`}
               </div>
             </div>
 
@@ -658,25 +705,31 @@ export default function MessManagerKitchenPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-1">
                 <Coffee className="w-5 h-5 mx-auto text-amber-400" />
-                <div className="text-xs font-bengali text-slate-400">সকালের নাস্তা (Breakfast)</div>
+                <div className="text-xs font-bengali text-slate-400">
+                  {isBengali ? "সকালের নাস্তা" : "Breakfast"}
+                </div>
                 <div className="text-2xl font-bold font-mono text-amber-300">
-                  {monthly?.breakfast || 0}
+                  {isBengali ? toBengaliDigits(monthly?.breakfast || 0) : monthly?.breakfast || 0}
                 </div>
               </div>
 
               <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-1">
                 <Sun className="w-5 h-5 mx-auto text-emerald-400" />
-                <div className="text-xs font-bengali text-slate-400">দুপুরের খাবার (Lunch)</div>
+                <div className="text-xs font-bengali text-slate-400">
+                  {isBengali ? "দুপুরের খাবার" : "Lunch"}
+                </div>
                 <div className="text-2xl font-bold font-mono text-emerald-300">
-                  {monthly?.lunch || 0}
+                  {isBengali ? toBengaliDigits(monthly?.lunch || 0) : monthly?.lunch || 0}
                 </div>
               </div>
 
               <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-1">
                 <Moon className="w-5 h-5 mx-auto text-indigo-400" />
-                <div className="text-xs font-bengali text-slate-400">রাতের খাবার (Dinner)</div>
+                <div className="text-xs font-bengali text-slate-400">
+                  {isBengali ? "রাতের খাবার" : "Dinner"}
+                </div>
                 <div className="text-2xl font-bold font-mono text-indigo-300">
-                  {monthly?.dinner || 0}
+                  {isBengali ? toBengaliDigits(monthly?.dinner || 0) : monthly?.dinner || 0}
                 </div>
               </div>
             </div>

@@ -175,27 +175,24 @@ function formatClaimTime(claimedAt?: string | number | null): {
 /**
  * Meal Shift Badge helper
  */
-function getShiftBadgeDetails(shift?: MealType) {
+function getShiftBadgeDetails(shift?: MealType, isBengali = false) {
   switch (shift) {
     case "breakfast":
       return {
-        bn: "সকাল (Breakfast)",
-        en: "Breakfast",
+        label: isBengali ? "সকাল" : "Breakfast",
         icon: Coffee,
         bg: "bg-amber-500/20 text-amber-300 border-amber-500/40",
       };
     case "dinner":
       return {
-        bn: "রাত (Dinner)",
-        en: "Dinner",
+        label: isBengali ? "রাত" : "Dinner",
         icon: Moon,
         bg: "bg-indigo-500/20 text-indigo-300 border-indigo-500/40",
       };
     case "lunch":
     default:
       return {
-        bn: "দুপুর (Lunch)",
-        en: "Lunch",
+        label: isBengali ? "দুপুর" : "Lunch",
         icon: Sun,
         bg: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
       };
@@ -219,7 +216,7 @@ export default function CounterVerificationModal({
   const status = result?.status || "invalid";
   const student = result?.student;
   const currentShift = result?.meal_type || student?.meal_type || "lunch";
-  const shiftBadge = getShiftBadgeDetails(currentShift);
+  const shiftBadge = getShiftBadgeDetails(currentShift, isBengali);
   const ShiftIcon = shiftBadge.icon;
 
   // Format previous claim time for duplicate/fraud alert
@@ -341,13 +338,13 @@ export default function CounterVerificationModal({
           <div className="w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 px-5 py-2.5 flex items-center justify-between text-slate-950 font-black">
             <div className="flex items-center space-x-2 text-xs sm:text-sm font-mono tracking-wider">
               <span className="w-2.5 h-2.5 rounded-full bg-slate-950 animate-ping" />
-              <span>BUP HALL VERIFIED</span>
+              <span>{isBengali ? "বিইউপি হল যাচাইকৃত" : "BUP HALL VERIFIED"}</span>
             </div>
             
             {/* Shift Badge in Header */}
             <div className="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-slate-950/20 text-slate-950 text-xs font-bold">
               <ShiftIcon className="w-3.5 h-3.5" />
-              <span>{shiftBadge.en.toUpperCase()}</span>
+              <span>{shiftBadge.label.toUpperCase()}</span>
             </div>
           </div>
 
@@ -377,10 +374,13 @@ export default function CounterVerificationModal({
                   id="counter-verification-title"
                   className="text-lg sm:text-xl font-extrabold text-emerald-400 font-bengali tracking-wide leading-tight"
                 >
-                  মিল সফলভাবে নিশ্চিত হয়েছে / Meal Verified
+                  {isBengali ? "মিল সফলভাবে নিশ্চিত হয়েছে" : "Meal Verified Successfully"}
                 </h2>
                 <p className="text-xs text-slate-400 font-medium">
-                  {currentShift.toUpperCase()} • {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                  {shiftBadge.label.toUpperCase()} •{" "}
+                  {isBengali
+                    ? toBengaliDigits(new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }))
+                    : new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                 </p>
               </div>
             </div>
@@ -399,16 +399,14 @@ export default function CounterVerificationModal({
                   <div className="flex flex-col items-center justify-center p-3 text-slate-500 space-y-2">
                     <User className="w-12 h-12 text-emerald-500/60" />
                     <span className="text-[10px] font-bengali text-slate-400 font-semibold leading-tight">
-                      অফিশিয়াল ছবি
-                      <br />
-                      (No Photo)
+                      {isBengali ? "অফিশিয়াল ছবি নেই" : "No Photo Available"}
                     </span>
                   </div>
                 )}
 
                 {/* Face Matching Label Badge */}
                 <div className="absolute bottom-0 inset-x-0 py-1 bg-slate-950/85 backdrop-blur-md text-[10px] font-bold text-emerald-300 font-bengali border-t border-emerald-500/30">
-                  চেহারা মিলিয়ে নিন (Face Match)
+                  {isBengali ? "চেহারা মিলিয়ে নিন" : "Face Match"}
                 </div>
               </div>
             </div>
@@ -417,7 +415,7 @@ export default function CounterVerificationModal({
             <div className="w-full space-y-2.5">
               {/* Full Name: 24px+ bold */}
               <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight px-2 break-words">
-                {student?.full_name || "শিক্ষার্থীর নাম / Student"}
+                {student?.full_name || (isBengali ? "শিক্ষার্থীর নাম" : "Student Name")}
               </h1>
 
               {/* ID & Room Badge Group */}
@@ -425,26 +423,32 @@ export default function CounterVerificationModal({
                 {/* Student ID */}
                 <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs sm:text-sm font-mono font-bold shadow-md">
                   <Hash className="w-4 h-4 text-emerald-400" />
-                  <span>ID: {student?.student_id || "N/A"}</span>
+                  <span>{isBengali ? `আইডি: ${toBengaliDigits(student?.student_id || "N/A")}` : `ID: ${student?.student_id || "N/A"}`}</span>
                 </div>
 
                 {/* Assigned Room Number */}
                 <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs sm:text-sm font-bold shadow-md font-bengali">
                   <Building className="w-4 h-4 text-emerald-400" />
-                  <span>রুম: {student?.room_number ? toBengaliDigits(student.room_number) : "N/A"} ({student?.room_number || "N/A"})</span>
+                  <span>
+                    {isBengali
+                      ? `রুম: ${toBengaliDigits(student?.room_number || "N/A")}`
+                      : `Room: ${student?.room_number || "N/A"}`}
+                  </span>
                 </div>
 
                 {/* Current Meal Shift Badge */}
                 <div className={cn("inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-bold shadow-md", shiftBadge.bg)}>
                   <ShiftIcon className="w-4 h-4 flex-shrink-0" />
-                  <span className="font-bengali">{shiftBadge.bn}</span>
+                  <span className="font-bengali">{shiftBadge.label}</span>
                 </div>
               </div>
 
               {/* Hall Information */}
               {student?.hall && (
                 <div className="text-xs text-slate-400 font-medium font-bengali pt-1">
-                  {student.hall === "female" ? "বিইউপি ছাত্রী হল (BUP Female Hall)" : "বিইউপি ছাত্র হল (BUP Male Hall)"}
+                  {student.hall === "female"
+                    ? (isBengali ? "বিইউপি ছাত্রী হল" : "BUP Female Hall")
+                    : (isBengali ? "বিইউপি ছাত্র হল" : "BUP Male Hall")}
                 </div>
               )}
             </div>
@@ -452,7 +456,7 @@ export default function CounterVerificationModal({
             {/* Auto-Dismiss Notice */}
             <div className="text-[11px] text-slate-400 font-mono flex items-center justify-center space-x-1.5 pt-1">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>স্বয়ংক্রিয়ভাবে পরবর্তী স্ক্যানে যাচ্ছে... (2.5s Auto-Dismiss)</span>
+              <span>{isBengali ? "স্বয়ংক্রিয়ভাবে পরবর্তী স্ক্যানে যাচ্ছে..." : "Auto-dismissing in 2.5s..."}</span>
             </div>
           </div>
 
@@ -478,10 +482,10 @@ export default function CounterVerificationModal({
           <div className="w-full bg-rose-600 px-5 py-2.5 flex items-center justify-between text-white font-black animate-pulse">
             <div className="flex items-center space-x-2 text-xs sm:text-sm font-mono tracking-wider">
               <ShieldAlert className="w-4 h-4 text-white" />
-              <span>SECURITY ALERT: DUPLICATE MEAL</span>
+              <span>{isBengali ? "নিরাপত্তা সতর্কতা: ডুপ্লিকেট মিল" : "SECURITY ALERT: DUPLICATE MEAL"}</span>
             </div>
             <div className="text-xs font-mono font-bold bg-slate-950/40 px-2 py-0.5 rounded">
-              FRAUD PREVENTION
+              {isBengali ? "জালিয়াতি প্রতিরোধ" : "FRAUD PREVENTION"}
             </div>
           </div>
 
@@ -499,10 +503,12 @@ export default function CounterVerificationModal({
                 id="counter-verification-title"
                 className="text-2xl sm:text-[30px] font-black text-rose-200 font-bengali tracking-tight leading-tight"
               >
-                ইতিমধ্যে নেওয়া হয়েছে! / Already Claimed!
+                {isBengali ? "ইতিমধ্যে নেওয়া হয়েছে!" : "Already Claimed!"}
               </h1>
               <p className="text-xs text-rose-300 font-semibold font-sans">
-                This meal allocation has already been logged and consumed for this shift.
+                {isBengali
+                  ? "এই শিফটের জন্য শিক্ষার্থীর বরাদ্দকৃত খাবার ইতিমধ্যে গ্রহণ করা হয়েছে।"
+                  : "This meal allocation has already been logged and consumed for this shift."}
               </p>
             </div>
 
@@ -510,10 +516,10 @@ export default function CounterVerificationModal({
             <div className="w-full px-4 py-3 rounded-2xl bg-rose-900/80 border border-rose-400/60 text-white shadow-lg space-y-1">
               <div className="flex items-center justify-center space-x-1.5 text-xs text-rose-300 font-bold uppercase tracking-wider font-mono">
                 <Clock className="w-4 h-4 text-rose-300 flex-shrink-0" />
-                <span>পূর্ববর্তী লগইন রেকর্ড (Previous Log)</span>
+                <span>{isBengali ? "পূর্ববর্তী সংগ্রহের রেকর্ড" : "Previous Claim Record"}</span>
               </div>
               <div className="text-sm sm:text-base font-extrabold text-white font-bengali leading-snug">
-                {claimTimeDetails.combined}
+                {isBengali ? claimTimeDetails.bnTime : claimTimeDetails.enTime}
               </div>
             </div>
 
@@ -534,15 +540,20 @@ export default function CounterVerificationModal({
 
               <div className="flex-1 min-w-0">
                 <div className="text-[11px] text-rose-400 font-bold uppercase font-mono tracking-wider">
-                  অ্যাকাউন্ট মালিক (Account Owner)
+                  {isBengali ? "অ্যাকাউন্ট মালিক" : "Account Owner"}
                 </div>
                 <div className="text-base sm:text-lg font-bold text-white truncate font-sans">
-                  {student?.full_name || "নাম পাওয়া যায়নি (Unknown)"}
+                  {student?.full_name || (isBengali ? "নাম পাওয়া যায়নি" : "Unknown Student")}
                 </div>
                 <div className="text-xs text-slate-300 font-mono">
-                  ID: <span className="text-rose-300 font-bold">{student?.student_id || "N/A"}</span>
+                  {isBengali ? "আইডি: " : "ID: "}
+                  <span className="text-rose-300 font-bold">
+                    {isBengali ? toBengaliDigits(student?.student_id || "N/A") : student?.student_id || "N/A"}
+                  </span>
                   {student?.room_number && (
-                    <span className="ml-2">| Room: {student.room_number}</span>
+                    <span className="ml-2">
+                      | {isBengali ? `রুম: ${toBengaliDigits(student.room_number)}` : `Room: ${student.room_number}`}
+                    </span>
                   )}
                 </div>
               </div>
@@ -558,11 +569,13 @@ export default function CounterVerificationModal({
                 }}
                 className="w-full py-4 px-6 rounded-2xl bg-rose-600 hover:bg-rose-500 active:scale-[0.98] text-white font-black text-sm sm:text-base font-bengali shadow-[0_0_25px_rgba(244,63,94,0.5)] transition-all flex items-center justify-center space-x-2"
               >
-                <span>ঠিক আছে / Dismiss</span>
+                <span>{isBengali ? "ঠিক আছে" : "Dismiss"}</span>
               </button>
 
               <div className="text-[11px] text-rose-300/80 font-mono text-center">
-                সতর্কতা নিশ্চিত করতে ৪ সেকেন্ড পর স্বয়ংক্রিয় বন্ধ হবে
+                {isBengali
+                  ? "সতর্কতা নিশ্চিত করতে ৪ সেকেন্ড পর স্বয়ংক্রিয় বন্ধ হবে"
+                  : "Auto-dismissing in 4 seconds"}
               </div>
             </div>
           </div>
@@ -589,7 +602,11 @@ export default function CounterVerificationModal({
           <div className="w-full bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 px-5 py-2.5 flex items-center justify-between text-slate-950 font-black">
             <div className="flex items-center space-x-2 text-xs sm:text-sm font-mono tracking-wider">
               <AlertTriangle className="w-4 h-4 text-slate-950" />
-              <span>{status === "network_error" ? "NETWORK TIMEOUT" : "VERIFICATION WARNING"}</span>
+              <span>
+                {status === "network_error"
+                  ? (isBengali ? "নেটওয়ার্ক সমস্যা" : "NETWORK TIMEOUT")
+                  : (isBengali ? "যাচাইকরণ সতর্কতা" : "VERIFICATION WARNING")}
+              </span>
             </div>
             <button
               type="button"
@@ -616,8 +633,8 @@ export default function CounterVerificationModal({
                 className="text-xl sm:text-2xl font-black text-amber-200 font-bengali tracking-tight"
               >
                 {status === "network_error"
-                  ? "নেটওয়ার্ক সংযোগে সমস্যা / Connection Timeout"
-                  : "অবৈধ কিউআর টোকেন / Invalid or Expired Token"}
+                  ? (isBengali ? "নেটওয়ার্ক সংযোগে সমস্যা" : "Connection Timeout")
+                  : (isBengali ? "অবৈধ কিউআর টোকেন" : "Invalid or Expired Token")}
               </h2>
               
               <p className="text-xs sm:text-sm text-amber-300 font-bengali leading-relaxed max-w-sm">
@@ -625,14 +642,12 @@ export default function CounterVerificationModal({
                   ? (isBengali ? result.error_message.bn : result.error_message.en)
                   : (result?.error_message ||
                      (status === "network_error"
-                       ? "সার্ভারের সাথে সংযোগ স্থাপন করা সম্ভব হয়নি। অনুগ্রহ করে ইন্টারনেট বা অফলাইন মোড পরীক্ষা করুন।"
-                       : "এই কিউআর কোডটির মেয়াদ শেষ হয়েছে অথবা কোডটি সঠিক নয়। শিক্ষার্থীকে পাসটি রিফ্রেশ করতে বলুন।"))}
-              </p>
-
-              <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
-                {status === "network_error"
-                  ? "Server connection timed out. Please retry scanning or check internet connectivity."
-                  : "The dynamic QR token has expired (30s window exceeded) or signature is invalid."}
+                       ? (isBengali
+                           ? "সার্ভারের সাথে সংযোগ স্থাপন করা সম্ভব হয়নি। অনুগ্রহ করে ইন্টারনেট বা অফলাইন মোড পরীক্ষা করুন।"
+                           : "Could not establish connection with server. Please check network.")
+                       : (isBengali
+                           ? "এই কিউআর কোডটির মেয়াদ শেষ হয়েছে অথবা কোডটি সঠিক নয়। শিক্ষার্থীকে পাসটি রিফ্রেশ করতে বলুন।"
+                           : "The dynamic QR token has expired or is invalid.")))}
               </p>
             </div>
 
@@ -651,7 +666,7 @@ export default function CounterVerificationModal({
                 className="w-full py-4 px-6 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-slate-950 font-black text-sm sm:text-base font-bengali shadow-[0_0_25px_rgba(245,158,11,0.4)] transition-all flex items-center justify-center space-x-2"
               >
                 <RefreshCw className="w-5 h-5 flex-shrink-0" />
-                <span>পুনরায় স্ক্যান করুন / Scan Again</span>
+                <span>{isBengali ? "পুনরায় স্ক্যান করুন" : "Scan Again"}</span>
               </button>
 
               <button
@@ -662,7 +677,7 @@ export default function CounterVerificationModal({
                 }}
                 className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-medium text-xs font-bengali transition-colors"
               >
-                বন্ধ করুন (Close)
+                {isBengali ? "বন্ধ করুন" : "Close"}
               </button>
             </div>
           </div>

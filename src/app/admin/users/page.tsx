@@ -26,7 +26,9 @@ import {
   Hash,
 } from "lucide-react";
 import { playFeedback } from "@/lib/audio-feedback";
-import { cn } from "@/lib/utils";
+import { cn, toBengaliDigits } from "@/lib/utils";
+import { useTranslation } from "@/context/LocaleContext";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 interface AdminUserRecord {
   id: string;
@@ -55,6 +57,7 @@ interface UserStats {
 }
 
 export default function AdminUsersAuditPage() {
+  const { isBengali, t } = useTranslation();
   const [users, setUsers] = useState<AdminUserRecord[]>([]);
   const [stats, setStats] = useState<UserStats>({
     total: 0,
@@ -223,14 +226,16 @@ export default function AdminUsersAuditPage() {
           <div>
             <div className="flex items-center space-x-2">
               <h1 className="text-base sm:text-lg font-bold text-slate-100 tracking-tight">
-                Student Directory & Audit Log
+                {isBengali ? "শিক্ষার্থী ডিরেক্টরি ও অডিট লগ" : "Student Directory & Audit Log"}
               </h1>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                ADMIN
+                {isBengali ? "অ্যাডমিন" : "ADMIN"}
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              Bangladesh University of Professionals • Residential Hall Dining System
+              {isBengali
+                ? "বাংলাদেশ ইউনিভার্সিটি অব প্রফেশনালস • আবাসিক হল ডাইনিং সিস্টেম"
+                : "Bangladesh University of Professionals • Residential Hall Dining System"}
             </p>
           </div>
         </div>
@@ -241,7 +246,7 @@ export default function AdminUsersAuditPage() {
             href="/counter"
             className="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 transition-all flex items-center space-x-1.5"
           >
-            <span>Counter Terminal</span>
+            <span>{isBengali ? "কাউন্টার টার্মিনাল" : "Counter Terminal"}</span>
             <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
           </Link>
 
@@ -250,10 +255,12 @@ export default function AdminUsersAuditPage() {
             onClick={() => fetchUsers(true)}
             disabled={isRefreshing}
             className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all"
-            title="Refresh User Data"
+            title={isBengali ? "তথ্য রিফ্রেশ করুন" : "Refresh User Data"}
           >
             <RotateCw className={cn("w-4 h-4", isRefreshing && "animate-spin text-emerald-400")} />
           </button>
+
+          <LanguageToggle />
         </div>
       </header>
 
@@ -287,8 +294,12 @@ export default function AdminUsersAuditPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div className="rounded-3xl p-4 sm:p-5 bg-slate-900/60 backdrop-blur-xl border border-slate-800 shadow-lg flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-xs text-slate-400 font-medium">Total Registered</span>
-              <p className="text-2xl font-mono font-extrabold text-slate-100">{stats.total}</p>
+              <span className="text-xs text-slate-400 font-medium">
+                {isBengali ? "মোট নিবন্ধিত" : "Total Registered"}
+              </span>
+              <p className="text-2xl font-mono font-extrabold text-slate-100">
+                {isBengali ? toBengaliDigits(stats.total) : stats.total}
+              </p>
             </div>
             <div className="w-11 h-11 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-300">
               <Users className="w-5 h-5" />
@@ -297,8 +308,12 @@ export default function AdminUsersAuditPage() {
 
           <div className="rounded-3xl p-4 sm:p-5 bg-slate-900/60 backdrop-blur-xl border border-slate-800 shadow-lg flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-xs text-emerald-400/90 font-medium">BUP Edu-mails</span>
-              <p className="text-2xl font-mono font-extrabold text-emerald-300">{stats.bupEdu}</p>
+              <span className="text-xs text-emerald-400/90 font-medium">
+                {isBengali ? "বিইউপি এডু-মেইল" : "BUP Edu-mails"}
+              </span>
+              <p className="text-2xl font-mono font-extrabold text-emerald-300">
+                {isBengali ? toBengaliDigits(stats.bupEdu) : stats.bupEdu}
+              </p>
             </div>
             <div className="w-11 h-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
               <GraduationCap className="w-5 h-5" />
@@ -307,8 +322,12 @@ export default function AdminUsersAuditPage() {
 
           <div className="rounded-3xl p-4 sm:p-5 bg-slate-900/60 backdrop-blur-xl border border-slate-800 shadow-lg flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-xs text-amber-400/90 font-medium">Personal Gmail</span>
-              <p className="text-2xl font-mono font-extrabold text-amber-300">{stats.gmail}</p>
+              <span className="text-xs text-amber-400/90 font-medium">
+                {isBengali ? "ব্যক্তিগত জিমেইল" : "Personal Gmail"}
+              </span>
+              <p className="text-2xl font-mono font-extrabold text-amber-300">
+                {isBengali ? toBengaliDigits(stats.gmail) : stats.gmail}
+              </p>
             </div>
             <div className="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
               <Mail className="w-5 h-5" />
@@ -317,8 +336,12 @@ export default function AdminUsersAuditPage() {
 
           <div className="rounded-3xl p-4 sm:p-5 bg-slate-900/60 backdrop-blur-xl border border-slate-800 shadow-lg flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-xs text-rose-400/90 font-medium">Blocked / Suspended</span>
-              <p className="text-2xl font-mono font-extrabold text-rose-300">{stats.blocked}</p>
+              <span className="text-xs text-rose-400/90 font-medium">
+                {isBengali ? "ব্লকড / স্থগিত" : "Blocked / Suspended"}
+              </span>
+              <p className="text-2xl font-mono font-extrabold text-rose-300">
+                {isBengali ? toBengaliDigits(stats.blocked) : stats.blocked}
+              </p>
             </div>
             <div className="w-11 h-11 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
               <ShieldAlert className="w-5 h-5" />
@@ -335,7 +358,11 @@ export default function AdminUsersAuditPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by Serial (#042), Name, Student ID, Email, Dept..."
+              placeholder={
+                isBengali
+                  ? "সিরিয়াল (#০৪২), নাম, শিক্ষার্থী আইডি, ইমেইল বা বিভাগ দিয়ে খুঁজুন..."
+                  : "Search by Serial (#042), Name, Student ID, Email, Dept..."
+              }
               className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-950/70 border border-slate-800 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 transition-colors"
             />
           </div>
@@ -348,9 +375,9 @@ export default function AdminUsersAuditPage() {
               onChange={(e) => setAccountTypeFilter(e.target.value as "all" | "bup_edu" | "personal_gmail")}
               className="px-3 py-2.5 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs font-semibold text-slate-300 focus:outline-none focus:border-emerald-500/50"
             >
-              <option value="all">All Account Types</option>
-              <option value="bup_edu">🎓 BUP Edu Mail</option>
-              <option value="personal_gmail">✉️ Personal Gmail</option>
+              <option value="all">{isBengali ? "সকল অ্যাকাউন্ট টাইপ" : "All Account Types"}</option>
+              <option value="bup_edu">{isBengali ? "🎓 বিইউপি এডু মেইল" : "🎓 BUP Edu Mail"}</option>
+              <option value="personal_gmail">{isBengali ? "✉️ ব্যক্তিগত জিমেইল" : "✉️ Personal Gmail"}</option>
             </select>
 
             {/* Status Filter */}
@@ -359,9 +386,9 @@ export default function AdminUsersAuditPage() {
               onChange={(e) => setStatusFilter(e.target.value as "all" | "active" | "blocked")}
               className="px-3 py-2.5 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs font-semibold text-slate-300 focus:outline-none focus:border-emerald-500/50"
             >
-              <option value="all">All Statuses</option>
-              <option value="active">Active Only</option>
-              <option value="blocked">Blocked Only</option>
+              <option value="all">{isBengali ? "সকল অবস্থা" : "All Statuses"}</option>
+              <option value="active">{isBengali ? "শুধুমাত্র সক্রিয়" : "Active Only"}</option>
+              <option value="blocked">{isBengali ? "শুধুমাত্র ব্লকড" : "Blocked Only"}</option>
             </select>
           </div>
         </div>
@@ -372,15 +399,15 @@ export default function AdminUsersAuditPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-800/80 bg-slate-950/50 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  <th className="py-3.5 px-4">Serial #</th>
-                  <th className="py-3.5 px-4">Student</th>
-                  <th className="py-3.5 px-4">Student ID</th>
-                  <th className="py-3.5 px-4">Department</th>
-                  <th className="py-3.5 px-4">Email</th>
-                  <th className="py-3.5 px-4">Role</th>
-                  <th className="py-3.5 px-4">Account Type</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4 text-right">Audit Action</th>
+                  <th className="py-3.5 px-4">{isBengali ? "সিরিয়াল #" : "Serial #"}</th>
+                  <th className="py-3.5 px-4">{isBengali ? "শিক্ষার্থী" : "Student"}</th>
+                  <th className="py-3.5 px-4">{isBengali ? "শিক্ষার্থী আইডি" : "Student ID"}</th>
+                  <th className="py-3.5 px-4">{isBengali ? "বিভাগ" : "Department"}</th>
+                  <th className="py-3.5 px-4">{isBengali ? "ইমেইল" : "Email"}</th>
+                  <th className="py-3.5 px-4">{isBengali ? "রোল" : "Role"}</th>
+                  <th className="py-3.5 px-4">{isBengali ? "অ্যাকাউন্টের ধরণ" : "Account Type"}</th>
+                  <th className="py-3.5 px-4">{isBengali ? "অবস্থা" : "Status"}</th>
+                  <th className="py-3.5 px-4 text-right">{isBengali ? "অডিট অ্যাকশন" : "Audit Action"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50 text-xs text-slate-200">
@@ -389,14 +416,16 @@ export default function AdminUsersAuditPage() {
                     <td colSpan={9} className="py-12 text-center text-slate-400">
                       <div className="flex items-center justify-center space-x-2">
                         <RotateCw className="w-5 h-5 animate-spin text-emerald-400" />
-                        <span>Loading student directory...</span>
+                        <span>{isBengali ? "শিক্ষার্থী তালিকা লোড হচ্ছে..." : "Loading student directory..."}</span>
                       </div>
                     </td>
                   </tr>
                 ) : filteredUsers.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-12 text-center text-slate-400">
-                      No students found matching your search and filter criteria.
+                      {isBengali
+                        ? "অনুসন্ধানের শর্তানুযায়ী কোনো শিক্ষার্থী পাওয়া যায়নি।"
+                        : "No students found matching your search and filter criteria."}
                     </td>
                   </tr>
                 ) : (
@@ -415,7 +444,7 @@ export default function AdminUsersAuditPage() {
                         <td className="py-3.5 px-4">
                           <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-xl bg-slate-800/80 border border-slate-700 font-mono font-bold text-emerald-300 text-xs">
                             <Hash className="w-3 h-3 text-slate-400" />
-                            <span>{user.hall_serial}</span>
+                            <span>{isBengali ? toBengaliDigits(user.hall_serial) : user.hall_serial}</span>
                           </span>
                         </td>
 
@@ -437,7 +466,9 @@ export default function AdminUsersAuditPage() {
                             <div className="truncate leading-tight">
                               <p className="font-semibold text-slate-100 truncate">{user.full_name}</p>
                               <p className="text-[11px] text-slate-400">
-                                {user.hall === "female" ? "Female Hall" : "Male Hall"} • Room {user.room_number}
+                                {isBengali
+                                  ? `${user.hall === "female" ? "ছাত্রী হল" : "ছাত্র হল"} • রুম ${toBengaliDigits(user.room_number)}`
+                                  : `${user.hall === "female" ? "Female Hall" : "Male Hall"} • Room ${user.room_number}`}
                               </p>
                             </div>
                           </div>
@@ -445,7 +476,7 @@ export default function AdminUsersAuditPage() {
 
                         {/* Student ID */}
                         <td className="py-3.5 px-4 font-mono font-semibold text-slate-200">
-                          {user.student_id}
+                          {isBengali ? toBengaliDigits(user.student_id) : user.student_id}
                         </td>
 
                         {/* Department */}
@@ -473,9 +504,15 @@ export default function AdminUsersAuditPage() {
                                 : "bg-emerald-950/60 border-emerald-500/50 text-emerald-300"
                             )}
                           >
-                            <option value="student" className="bg-slate-900 text-emerald-300">🎓 Student</option>
-                            <option value="staff" className="bg-slate-900 text-blue-300">🛡️ Staff</option>
-                            <option value="admin" className="bg-slate-900 text-purple-300">👑 Admin</option>
+                            <option value="student" className="bg-slate-900 text-emerald-300">
+                              {isBengali ? "🎓 শিক্ষার্থী" : "🎓 Student"}
+                            </option>
+                            <option value="staff" className="bg-slate-900 text-blue-300">
+                              {isBengali ? "🛡️ স্টাফ" : "🛡️ Staff"}
+                            </option>
+                            <option value="admin" className="bg-slate-900 text-purple-300">
+                              {isBengali ? "👑 অ্যাডমিন" : "👑 Admin"}
+                            </option>
                           </select>
                         </td>
 
@@ -484,12 +521,12 @@ export default function AdminUsersAuditPage() {
                           {user.login_type === "bup_edu" ? (
                             <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
                               <GraduationCap className="w-3 h-3" />
-                              <span>BUP Edu</span>
+                              <span>{isBengali ? "বিইউপি এডু" : "BUP Edu"}</span>
                             </span>
                           ) : (
                             <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
                               <Mail className="w-3 h-3" />
-                              <span>Personal Gmail</span>
+                              <span>{isBengali ? "ব্যক্তিগত জিমেইল" : "Personal Gmail"}</span>
                             </span>
                           )}
                         </td>
@@ -499,12 +536,12 @@ export default function AdminUsersAuditPage() {
                           {user.is_approved ? (
                             <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                              <span>Active</span>
+                              <span>{isBengali ? "সক্রিয়" : "Active"}</span>
                             </span>
                           ) : (
                             <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30">
                               <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                              <span>Blocked</span>
+                              <span>{isBengali ? "ব্লকড" : "Blocked"}</span>
                             </span>
                           )}
                         </td>
@@ -527,12 +564,12 @@ export default function AdminUsersAuditPage() {
                             ) : user.is_approved ? (
                               <>
                                 <Lock className="w-3 h-3" />
-                                <span>Block</span>
+                                <span>{isBengali ? "ব্লক করুন" : "Block"}</span>
                               </>
                             ) : (
                               <>
                                 <Unlock className="w-3 h-3" />
-                                <span>Unblock</span>
+                                <span>{isBengali ? "আনব্লক করুন" : "Unblock"}</span>
                               </>
                             )}
                           </button>

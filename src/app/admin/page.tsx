@@ -27,8 +27,10 @@ import {
 } from "lucide-react";
 import { playFeedback } from "@/lib/audio-feedback";
 import { formatHallSerial } from "@/lib/hall-serial";
-import { cn } from "@/lib/utils";
+import { cn, toBengaliDigits } from "@/lib/utils";
 import { MealType } from "@/types";
+import { useTranslation } from "@/context/LocaleContext";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 interface MealLogEntry {
   id: string;
@@ -61,14 +63,15 @@ interface DiningStats {
 }
 
 const MONTH_OPTIONS = [
-  { value: "2026-10", label: "October 2026" },
-  { value: "2026-09", label: "September 2026" },
-  { value: "2026-08", label: "August 2026" },
-  { value: "2026-07", label: "July 2026" },
-  { value: "2026-06", label: "June 2026" },
+  { value: "2026-10", label: "October 2026", bnLabel: "অক্টোবর ২০২৬" },
+  { value: "2026-09", label: "September 2026", bnLabel: "সেপ্টেম্বর ২০২৬" },
+  { value: "2026-08", label: "August 2026", bnLabel: "আগস্ট ২০২৬" },
+  { value: "2026-07", label: "July 2026", bnLabel: "জুলাই ২০২৬" },
+  { value: "2026-06", label: "June 2026", bnLabel: "জুন ২০২৬" },
 ];
 
 export default function AdminDashboardPage() {
+  const { isBengali, t } = useTranslation();
   const [selectedMonth, setSelectedMonth] = useState("2026-10");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedShift, setSelectedShift] = useState<"all" | MealType>("all");
@@ -193,12 +196,13 @@ export default function AdminDashboardPage() {
   const formatBSTTime = (isoString?: string | null) => {
     if (!isoString) return "—";
     try {
-      return new Intl.DateTimeFormat("en-US", {
+      const formatted = new Intl.DateTimeFormat("en-US", {
         timeZone: "Asia/Dhaka",
         hour: "numeric",
         minute: "2-digit",
         hour12: true,
       }).format(new Date(isoString));
+      return isBengali ? toBengaliDigits(formatted) : formatted;
     } catch {
       return isoString;
     }
@@ -218,14 +222,16 @@ export default function AdminDashboardPage() {
           <div>
             <div className="flex items-center space-x-2">
               <h1 className="text-base sm:text-lg font-bold text-slate-100 tracking-tight">
-                BUP Dining Executive Administration
+                {isBengali ? "বিইউপি ডাইনিং এক্সিকিউটিভ অ্যাডমিনিস্ট্রেশন" : "BUP Dining Executive Administration"}
               </h1>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                ADMIN
+                {isBengali ? "অ্যাডমিন" : "ADMIN"}
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              Central Command, Hall Dining Ledger & Role Control
+              {isBengali
+                ? "কেন্দ্রীয় নিয়ন্ত্রণ, হল ডাইনিং লেজার এবং রোল পরিচালনা"
+                : "Central Command, Hall Dining Ledger & Role Control"}
             </p>
           </div>
         </div>
@@ -237,7 +243,7 @@ export default function AdminDashboardPage() {
             className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 flex items-center space-x-1.5 transition-colors shadow-sm"
           >
             <Users className="w-3.5 h-3.5 text-emerald-400" />
-            <span>User Management</span>
+            <span>{isBengali ? "ইউজার ম্যানেজমেন্ট" : "User Management"}</span>
           </Link>
 
           <Link
@@ -245,7 +251,7 @@ export default function AdminDashboardPage() {
             className="hidden sm:flex px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 items-center space-x-1.5 transition-colors shadow-sm"
           >
             <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-            <span>Approvals</span>
+            <span>{isBengali ? "অনুমোদনসমূহ" : "Approvals"}</span>
           </Link>
 
           <Link
@@ -253,8 +259,10 @@ export default function AdminDashboardPage() {
             className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center space-x-1.5 transition-all shadow-emerald-glow"
           >
             <Utensils className="w-3.5 h-3.5" />
-            <span>Counter Terminal</span>
+            <span>{isBengali ? "কাউন্টার টার্মিনাল" : "Counter Terminal"}</span>
           </Link>
+
+          <LanguageToggle />
         </div>
       </nav>
 
@@ -265,8 +273,10 @@ export default function AdminDashboardPage() {
           {/* Total Meals */}
           <div className="rounded-2xl p-4 bg-slate-900/60 backdrop-blur-xl border border-slate-800 flex items-center justify-between">
             <div>
-              <span className="text-xs text-slate-400">Total Logged</span>
-              <p className="text-2xl font-mono font-extrabold text-emerald-400">{stats.total}</p>
+              <span className="text-xs text-slate-400">{isBengali ? "মোট রেকর্ড" : "Total Logged"}</span>
+              <p className="text-2xl font-mono font-extrabold text-emerald-400">
+                {isBengali ? toBengaliDigits(stats.total) : stats.total}
+              </p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
               <Utensils className="w-5 h-5" />
@@ -276,8 +286,10 @@ export default function AdminDashboardPage() {
           {/* Consumed */}
           <div className="rounded-2xl p-4 bg-slate-900/60 backdrop-blur-xl border border-slate-800 flex items-center justify-between">
             <div>
-              <span className="text-xs text-slate-400">Consumed Meals</span>
-              <p className="text-2xl font-mono font-extrabold text-teal-300">{stats.consumed}</p>
+              <span className="text-xs text-slate-400">{isBengali ? "গৃহীত মিল" : "Consumed Meals"}</span>
+              <p className="text-2xl font-mono font-extrabold text-teal-300">
+                {isBengali ? toBengaliDigits(stats.consumed) : stats.consumed}
+              </p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-300">
               <CheckCircle2 className="w-5 h-5" />
@@ -287,8 +299,10 @@ export default function AdminDashboardPage() {
           {/* Breakfast */}
           <div className="rounded-2xl p-4 bg-slate-900/60 backdrop-blur-xl border border-slate-800 flex items-center justify-between">
             <div>
-              <span className="text-xs text-slate-400">Breakfast</span>
-              <p className="text-2xl font-mono font-extrabold text-amber-400">{stats.breakfast}</p>
+              <span className="text-xs text-slate-400">{isBengali ? "সকালের নাস্তা" : "Breakfast"}</span>
+              <p className="text-2xl font-mono font-extrabold text-amber-400">
+                {isBengali ? toBengaliDigits(stats.breakfast) : stats.breakfast}
+              </p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
               <Coffee className="w-5 h-5" />
@@ -298,8 +312,10 @@ export default function AdminDashboardPage() {
           {/* Lunch */}
           <div className="rounded-2xl p-4 bg-slate-900/60 backdrop-blur-xl border border-slate-800 flex items-center justify-between">
             <div>
-              <span className="text-xs text-slate-400">Lunch</span>
-              <p className="text-2xl font-mono font-extrabold text-emerald-400">{stats.lunch}</p>
+              <span className="text-xs text-slate-400">{isBengali ? "দুপুরের খাবার" : "Lunch"}</span>
+              <p className="text-2xl font-mono font-extrabold text-emerald-400">
+                {isBengali ? toBengaliDigits(stats.lunch) : stats.lunch}
+              </p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
               <Sun className="w-5 h-5" />
@@ -309,8 +325,10 @@ export default function AdminDashboardPage() {
           {/* Dinner */}
           <div className="rounded-2xl p-4 bg-slate-900/60 backdrop-blur-xl border border-slate-800 flex items-center justify-between col-span-2 md:col-span-1">
             <div>
-              <span className="text-xs text-slate-400">Dinner</span>
-              <p className="text-2xl font-mono font-extrabold text-indigo-400">{stats.dinner}</p>
+              <span className="text-xs text-slate-400">{isBengali ? "রাতের খাবার" : "Dinner"}</span>
+              <p className="text-2xl font-mono font-extrabold text-indigo-400">
+                {isBengali ? toBengaliDigits(stats.dinner) : stats.dinner}
+              </p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
               <Moon className="w-5 h-5" />
@@ -325,10 +343,12 @@ export default function AdminDashboardPage() {
             <div>
               <h2 className="text-lg font-bold text-slate-100 flex items-center space-x-2">
                 <Calendar className="w-5 h-5 text-emerald-400" />
-                <span>Monthly Hall Dining Log</span>
+                <span>{isBengali ? "মাসিক হল ডাইনিং লেজার" : "Monthly Hall Dining Log"}</span>
               </h2>
               <p className="text-xs text-slate-400">
-                Physical meal consumption ledger aggregated across all resident students
+                {isBengali
+                  ? "সকল আবাসিক শিক্ষার্থীর সমন্বিত খাবার গ্রহণের খতিয়ান"
+                  : "Physical meal consumption ledger aggregated across all resident students"}
               </p>
             </div>
 
@@ -339,7 +359,7 @@ export default function AdminDashboardPage() {
                 className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 flex items-center space-x-1.5 transition-colors shadow-sm"
               >
                 <Download className="w-4 h-4 text-emerald-400" />
-                <span>Export CSV</span>
+                <span>{isBengali ? "এক্সেল/CSV ডাউনলোড" : "Export CSV"}</span>
               </button>
 
               <button
@@ -348,7 +368,7 @@ export default function AdminDashboardPage() {
                 className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 flex items-center space-x-1.5 transition-colors shadow-sm"
               >
                 <Printer className="w-4 h-4 text-slate-300" />
-                <span>Print Log</span>
+                <span>{isBengali ? "প্রিন্ট লেজার" : "Print Log"}</span>
               </button>
             </div>
           </div>
@@ -362,7 +382,11 @@ export default function AdminDashboardPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Filter by Student Name, ID, or Hall Serial..."
+                placeholder={
+                  isBengali
+                    ? "শিক্ষার্থীর নাম, আইডি বা হল সিরিয়াল দিয়ে খুঁজুন..."
+                    : "Filter by Student Name, ID, or Hall Serial..."
+                }
                 className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs sm:text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50"
               />
             </div>
@@ -380,7 +404,7 @@ export default function AdminDashboardPage() {
               >
                 {MONTH_OPTIONS.map((m) => (
                   <option key={m.value} value={m.value}>
-                    {m.label}
+                    {isBengali ? m.bnLabel : m.label}
                   </option>
                 ))}
               </select>
@@ -399,10 +423,10 @@ export default function AdminDashboardPage() {
                 onChange={(e) => setSelectedShift(e.target.value as "all" | MealType)}
                 className="px-3 py-2 rounded-xl bg-slate-950/70 border border-slate-800 text-xs font-bold text-slate-200 focus:outline-none focus:border-emerald-500/50"
               >
-                <option value="all">All Shifts</option>
-                <option value="breakfast">Breakfast</option>
-                <option value="lunch">Lunch</option>
-                <option value="dinner">Dinner</option>
+                <option value="all">{isBengali ? "সকল শিফট" : "All Shifts"}</option>
+                <option value="breakfast">{isBengali ? "সকাল" : "Breakfast"}</option>
+                <option value="lunch">{isBengali ? "দুপুর" : "Lunch"}</option>
+                <option value="dinner">{isBengali ? "রাত" : "Dinner"}</option>
               </select>
 
               {(selectedDate || selectedShift !== "all" || searchQuery) && (
@@ -415,7 +439,7 @@ export default function AdminDashboardPage() {
                   }}
                   className="px-2.5 py-2 text-xs text-rose-400 hover:text-rose-300 font-semibold"
                 >
-                  Clear Filters
+                  {isBengali ? "ফিল্টার মুছুন" : "Clear Filters"}
                 </button>
               )}
             </div>
@@ -427,14 +451,14 @@ export default function AdminDashboardPage() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-800/80 bg-slate-950/50 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    <th className="py-3.5 px-4">Date</th>
-                    <th className="py-3.5 px-4">Student</th>
-                    <th className="py-3.5 px-4">Serial #</th>
-                    <th className="py-3.5 px-4">Department</th>
-                    <th className="py-3.5 px-4">Room #</th>
-                    <th className="py-3.5 px-4">Meal Shift</th>
-                    <th className="py-3.5 px-4">Status</th>
-                    <th className="py-3.5 px-4 text-right">Claimed (BST)</th>
+                    <th className="py-3.5 px-4">{isBengali ? "তারিখ" : "Date"}</th>
+                    <th className="py-3.5 px-4">{isBengali ? "শিক্ষার্থী" : "Student"}</th>
+                    <th className="py-3.5 px-4">{isBengali ? "সিরিয়াল #" : "Serial #"}</th>
+                    <th className="py-3.5 px-4">{isBengali ? "বিভাগ" : "Department"}</th>
+                    <th className="py-3.5 px-4">{isBengali ? "রুম #" : "Room #"}</th>
+                    <th className="py-3.5 px-4">{isBengali ? "মিল শিফট" : "Meal Shift"}</th>
+                    <th className="py-3.5 px-4">{isBengali ? "অবস্থা" : "Status"}</th>
+                    <th className="py-3.5 px-4 text-right">{isBengali ? "গ্রহণের সময় (BST)" : "Claimed (BST)"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/50 text-xs text-slate-200">
@@ -443,14 +467,16 @@ export default function AdminDashboardPage() {
                       <td colSpan={8} className="py-12 text-center text-slate-400">
                         <div className="flex items-center justify-center space-x-2">
                           <RotateCw className="w-5 h-5 animate-spin text-emerald-400" />
-                          <span>Loading monthly dining log...</span>
+                          <span>{isBengali ? "মাসিক ডাইনিং লগ লোড হচ্ছে..." : "Loading monthly dining log..."}</span>
                         </div>
                       </td>
                     </tr>
                   ) : logs.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-12 text-center text-slate-400">
-                        No dining log records found matching the active filters.
+                        {isBengali
+                          ? "ফিল্টারের সাথে মিল রেখে কোনো ডাইনিং লগ রেকর্ড পাওয়া যায়নি।"
+                          : "No dining log records found matching the active filters."}
                       </td>
                     </tr>
                   ) : (
@@ -464,17 +490,17 @@ export default function AdminDashboardPage() {
                         <tr key={log.id} className="transition-colors hover:bg-slate-800/40">
                           {/* Date */}
                           <td className="py-3.5 px-4 font-mono font-medium text-slate-200">
-                            {dateStr}
+                            {isBengali ? toBengaliDigits(dateStr) : dateStr}
                           </td>
 
                           {/* Student Details */}
                           <td className="py-3.5 px-4">
                             <div className="truncate leading-tight">
                               <p className="font-semibold text-slate-100 truncate">
-                                {student?.full_name || "Unknown Student"}
+                                {student?.full_name || (isBengali ? "অপরিচিত শিক্ষার্থী" : "Unknown Student")}
                               </p>
                               <p className="text-[11px] text-slate-400 font-mono">
-                                ID: {student?.student_id || "N/A"}
+                                {isBengali ? `আইডি: ${student?.student_id || "N/A"}` : `ID: ${student?.student_id || "N/A"}`}
                               </p>
                             </div>
                           </td>
@@ -482,18 +508,20 @@ export default function AdminDashboardPage() {
                           {/* Hall Serial */}
                           <td className="py-3.5 px-4">
                             <span className="inline-flex items-center px-2 py-0.5 rounded-lg bg-slate-800 font-mono font-bold text-emerald-300 text-xs border border-slate-700">
-                              #{student?.hall_serial ? formatHallSerial(String(student.hall_serial)) : "N/A"}
+                              #{student?.hall_serial
+                                ? (isBengali ? toBengaliDigits(formatHallSerial(String(student.hall_serial))) : formatHallSerial(String(student.hall_serial)))
+                                : "N/A"}
                             </span>
                           </td>
 
                           {/* Department */}
                           <td className="py-3.5 px-4 text-slate-300 truncate max-w-[180px]">
-                            {student?.department || "General"}
+                            {student?.department || (isBengali ? "সাধারণ" : "General")}
                           </td>
 
                           {/* Room # */}
                           <td className="py-3.5 px-4 font-mono text-slate-300">
-                            {student?.room_number || "N/A"}
+                            {student?.room_number ? (isBengali ? toBengaliDigits(student.room_number) : student.room_number) : "N/A"}
                           </td>
 
                           {/* Meal Shift Badge */}
@@ -512,7 +540,11 @@ export default function AdminDashboardPage() {
                               {log.meal_type === "breakfast" && <Coffee className="w-3 h-3" />}
                               {log.meal_type === "lunch" && <Sun className="w-3 h-3" />}
                               {log.meal_type === "dinner" && <Moon className="w-3 h-3" />}
-                              <span className="capitalize">{log.meal_type}</span>
+                              <span className="capitalize">
+                                {isBengali
+                                  ? (log.meal_type === "breakfast" ? "সকাল" : log.meal_type === "lunch" ? "দুপুর" : "রাত")
+                                  : log.meal_type}
+                              </span>
                             </span>
                           </td>
 
@@ -521,11 +553,11 @@ export default function AdminDashboardPage() {
                             {log.status === "consumed" ? (
                               <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                                <span>Consumed</span>
+                                <span>{isBengali ? "গৃহীত" : "Consumed"}</span>
                               </span>
                             ) : (
                               <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/15 text-blue-300 border border-blue-500/30">
-                                <span>Booked</span>
+                                <span>{isBengali ? "বুক করা" : "Booked"}</span>
                               </span>
                             )}
                           </td>
